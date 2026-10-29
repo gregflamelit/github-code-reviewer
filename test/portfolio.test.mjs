@@ -30,6 +30,10 @@ test('discovery caps and cancellation are explicit',async()=>{
   const controller=new AbortController();controller.abort(new Error('cancelled'));
   await assert.rejects(collectPortfolio('https://github.com/alice',{signal:controller.signal,request:async()=>[repo('a')],collectRepo}),/cancelled/);
 });
+test('large inventories cannot crowd implementation out of the shared budget',async()=>{
+  const result=await collectPortfolio('https://github.com/alice',{request:async()=>[repo('a'),repo('b')],collectRepo:async url=>{const value=await collectRepo(url);value.evidence.unshift({id:'inventory',type:'inventory',path:'File inventory',content:'x'.repeat(100000),url});return value;},limits:{...portfolioLimits,maxEvidenceCharacters:3000}});
+  assert.ok(result.portfolio.included.every(r=>r.incorporatedFiles===1));assert.equal(result.evidence.filter(e=>e.type==='file').length,2);assert.equal(result.portfolio.collectionComplete,true);
+});
 test('insights rank verified weaknesses separately from missing evidence, including historical rows',()=>{
   const catalog={rubric:{domains:[{id:'D',criteria:[{id:'D.1',name:'Weakness',domain_weight_percent:50},{id:'D.2',name:'Missing',domain_weight_percent:50}]}]}};
   const report={domains:[{id:'D',name:'Domain',weight:1,rows:[{criterion_id:'D.1',status:'scored',score:1,evidence:[{url:'source'}]},{criterion_id:'D.2',status:'unknown',score:null,evidence:[]}]}]};

@@ -37,7 +37,10 @@ export async function collectPortfolio(url,{signal,onProgress=()=>{},request=git
       if(!collection.evidence.some(e=>e.type==='file'))throw new Error('No supported source or documentation files could be collected.');
       const manifest={...item,sha:collection.repository.sha,branch:collection.repository.branch,totalFiles:collection.repository.totalFiles,collectedAt:collection.repository.collectedAt,availableEvidenceItems:collection.evidence.length,incorporatedFiles:0,incorporatedCharacters:0,omittedEvidenceItems:0,warnings:collection.warnings};
       included.push(manifest);
-      buckets.push(collection.evidence.map(e=>({...e,repository:item.fullName,commit_sha:collection.repository.sha,originalPath:e.path,path:item.fullName+'/'+e.path})));
+      // Source comes first: large inventories must not consume the shared budget
+      // before any implementation from a selected project can be inspected.
+      const evidencePriority={file:0,metadata:1,pull_request:2,inventory:3};
+      buckets.push(collection.evidence.map(e=>({...e,repository:item.fullName,commit_sha:collection.repository.sha,originalPath:e.path,path:item.fullName+'/'+e.path})).sort((a,b)=>(evidencePriority[a.type]??4)-(evidencePriority[b.type]??4)));
     }catch(error){if(signal?.aborted)throw error;failed.push({...item,reason:error.message});}
   }
   if(!included.length)throw new Error('Evidence collection failed for every selected repository. '+failed.map(r=>r.name+': '+r.reason).join('; '));

@@ -8,6 +8,14 @@ async function finished(jobs){for(let i=0;i<200&&jobs.active;i++)await tick();as
 function memoryStore(){const map=new Map();return {save(r){map.set(r.id,structuredClone(r));return r;},get(id){return structuredClone(map.get(id));}};}
 const collected={repository:{fullName:'a/b',sha:'a'.repeat(40)},evidence:[{id:'E1',content:'artifact',path:'README.md',type:'file',url:'https://github.com/a/b'}],warnings:[]};
 const unknowns=domains=>({summary:'Bounded evidence.',results:domains.flatMap(d=>d.criteria.map(c=>({criterion_id:c.id,status:'unknown',score:null,confidence:'low',rationale:'Insufficient evidence.',evidence:[],next_validation:'Inspect more evidence.'})))});
+
+test('profile evaluates the combined evidence once for all three reports and carries incomplete scope',async()=>{
+  const store=memoryStore();let collections=0;const ids=[];
+  const portfolio={owner:'alice',included:[{fullName:'alice/a',sha:'a'.repeat(40),incorporatedFiles:1}],failed:[{fullName:'alice/b'}],collectionComplete:false,consolidationMethod:'Combined evidence',listingTruncated:false};
+  const jobs=createJobs({store,dataDir:'.local',collect:async()=>{collections++;return {portfolio,evidence:collected.evidence,warnings:[]};},createClient:()=>({initialize:async()=>{},account:async()=>({authenticated:true}),close(){},evaluate:async({domains,assessmentContext})=>{assert.equal(assessmentContext.type,'portfolio');assert.equal(assessmentContext.repositories[0].name,'alice/a');ids.push(...domains.flatMap(d=>d.criteria.map(c=>c.id)));return unknowns(domains);}})});
+  const review=jobs.start({url:'https://github.com/alice'});await finished(jobs);const result=store.get(review.id);
+  assert.equal(collections,1);assert.equal(ids.length,104);assert.equal(new Set(ids).size,104);assert.equal(result.subjectType,'portfolio');assert.equal(result.reports.length,3);assert.ok(result.reports.every(r=>!r.eligible&&r.blockers.some(b=>b.id==='portfolio_scope')&&r.insights));assert.ok(result.insights.evidenceGaps.length);
+});
 test('interrupted evaluation resumes completed batches against the saved snapshot',async()=>{
   const store=memoryStore();let collections=0,calls=0,fail=true;
   const jobs=createJobs({store,dataDir:'.local',collect:async()=>{collections++;return structuredClone(collected);},createClient:()=>({initialize:async()=>{},account:async()=>({authenticated:true}),close(){},evaluate:async({domains})=>{calls++;if(fail&&calls===2)throw new Error('Transient model error');return unknowns(domains);}})});

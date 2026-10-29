@@ -86,7 +86,7 @@ export function validateResults(output, domains, evidence) {
       if (!e || !Number.isInteger(ref.start_line)||!Number.isInteger(ref.end_line)||ref.start_line<1||ref.end_line<ref.start_line||ref.end_line>e.content.split('\n').length||typeof ref.quote!=='string'||!ref.quote.trim()) continue;
       const excerpt=e.content.split('\n').slice(ref.start_line-1,ref.end_line).join('\n');
       if (!excerpt.includes(ref.quote)) continue;
-      verified.push({...ref,url:e.type==='file' ? e.url+'#L'+ref.start_line+'-L'+ref.end_line:e.url,path:e.path,type:e.type});
+      verified.push({...ref,url:e.type==='file' ? e.url+'#L'+ref.start_line+'-L'+ref.end_line:e.url,path:e.path,type:e.type,...(e.repository?{repository:e.repository,commit_sha:e.commit_sha}:{})});
     }
     if ((r.status==='scored'||r.status==='not_applicable')&&!verified.length) {
       warnings.push(r.criterion_id+': unsupported assessment converted to unknown.');

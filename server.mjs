@@ -6,6 +6,7 @@ import { createStore } from './src/store.mjs';
 import { createJobs } from './src/jobs.mjs';
 import { CodexClient } from './src/codex.mjs';
 import { rubric,profiles,scoringConfig,getReviewCatalog,criterionCount } from './src/rubric.mjs';
+import {buildInsights} from './src/insights.mjs';
 
 export function createApplication({dataDir=process.env.REVIEWER_DATA_DIR||resolve('.local'),jobsFactory=createJobs,clientFactory=o=>new CodexClient(o)}={}){
   const store=createStore(dataDir);const jobs=jobsFactory({store,dataDir});
@@ -33,6 +34,7 @@ export function createApplication({dataDir=process.env.REVIEWER_DATA_DIR||resolv
         r.catalog=getReviewCatalog(r);r.expectedCriteria=criterionCount(r.catalog);
         // Older single-report reviews retain their original aggregates, including narrower scope.
         if(r.report&&!r.reports){r.report={...r.report,rubricId:r.report.rubricId||'ai_product_manager',rubricName:r.report.rubricName||'AI Product Manager',scoringVersion:r.report.scoringVersion||r.scoringVersion||'1.1',blockers:r.report.blockers||[]};r.reports=[r.report];}
+        if(r.reports){r.insights??=buildInsights(r.reports,r.catalog,r.validationWarnings||[]);for(const report of r.reports)report.insights??=buildInsights([report],r.catalog,r.validationWarnings||[]);}
         if(match[2]==='export'){
           const selected=url.searchParams.get('rubric');
           if(selected){const report=r.reports?.find(report=>report.rubricId===selected);if(!report)return send(res,400,{error:'Unknown or unavailable rubric report.'});return send(res,200,{...r,reports:undefined,report},{'Content-Disposition':'attachment; filename="'+selected+'-'+r.id+'.json"'});}

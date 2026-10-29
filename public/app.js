@@ -15,7 +15,7 @@ function render(r){
   const reviewCatalog=r.catalog||catalog;
   $('#rubric-version').textContent='Criteria '+reviewCatalog.rubric.rubric_version+' · Scoring '+(r.scoringVersion||reviewCatalog.scoringConfig.rubric_version);
   $('#review-title').textContent=r.repository?.fullName||r.url.replace('https://github.com/','');
-  $('#review-meta').textContent=['Three rubric reports',r.repository?.sha?'Commit '+r.repository.sha.slice(0,12):'Resolving revision','Repository evidence only'].join('  ·  ');
+  $('#review-meta').textContent=['Three rubric reports',r.portfolio?r.portfolio.included.length+' public repositories · consolidated assessment':r.repository?.sha?'Commit '+r.repository.sha.slice(0,12):'Collecting evidence','Repository evidence only'].join('  ·  ');
   const busy=running.has(r.status);$('#progress').hidden=!busy;$('#status').textContent=r.status[0].toUpperCase()+r.status.slice(1);$('#progress-message').textContent=r.message;
   const incomplete=reviewCatalog.rubric.domains.some(d=>d.criteria.some(c=>!r.results?.some(row=>row.criterion_id===c.id)));
   $('#upgrade').hidden=r.status!=='completed'||(reviewCatalog.rubric.rubric_version===catalog.rubric.rubric_version&&reviewCatalog.scoringConfig.rubric_version===catalog.scoringConfig.rubric_version);
@@ -25,13 +25,30 @@ function render(r){
   $('#cancel').onclick=async()=>{try{await api('/api/reviews/'+r.id+'/cancel',{method:'POST',body:'{}'});}catch(e){$('#review-error').hidden=false;$('#review-error').textContent=e.message;}};
   $('#retry').onclick=async()=>{try{await api('/api/reviews/'+r.id+'/retry',{method:'POST',body:'{}'});await poll();}catch(e){$('#review-error').hidden=false;$('#review-error').textContent=e.message;}};
   $('#events').replaceChildren(...(r.events||[]).map(e=>el('li',{text:new Date(e.at).toLocaleTimeString()+' — '+e.message})));
-  $('#metrics').hidden=!r.report;$('#report-notice').hidden=!r.report;$('#summaries').hidden=!r.report;$('#rubric-cards').hidden=!r.report;$('#selected-report-heading').hidden=!r.report;$('#rubric-weights').hidden=!r.report;
+  $('#metrics').hidden=!r.report;$('#report-notice').hidden=!r.report;$('#summaries').hidden=!r.report;$('#summary-details').hidden=!r.report;$('#rubric-cards').hidden=!r.report;$('#selected-report-heading').hidden=!r.report;$('#rubric-weights').hidden=!r.report;
   $('#domains').replaceChildren();
+  $('#improvements').hidden=!r.report;
+  $('#improvements').replaceChildren();
+  $('#portfolio-scope').hidden=!r.portfolio;
+  $('#portfolio-scope').replaceChildren();
+  if(r.portfolio){
+    const p=r.portfolio;
+    $('#portfolio-scope').append(el('h2',{text:'Portfolio evidence scope'}),el('p',{text:p.discoveredCount+' discovered · '+p.eligibleCount+' eligible · '+p.included.length+' collected · '+p.failed.length+' failed. '+p.selectionPolicy}),el('p',{text:p.consolidationMethod}),el('p',{text:p.listingTruncated?'Discovery page limit reached; additional repositories may exist.':'Repository discovery completed.'}),el('ul',{},p.included.map(repo=>el('li',{},[el('a',{href:repo.url+'/tree/'+repo.sha,target:'_blank',rel:'noreferrer',text:repo.fullName+' @ '+repo.sha.slice(0,12)}),el('span',{text:' · '+repo.incorporatedFiles+' sampled files of '+repo.totalFiles+' · '+repo.incorporatedCharacters.toLocaleString()+' characters'+(repo.omittedEvidenceItems?' · '+repo.omittedEvidenceItems+' items omitted by budget':'')})]))),el('details',{},[el('summary',{text:'Excluded and failed repositories ('+(p.excluded.length+p.failed.length)+')'}),el('ul',{},[...p.excluded,...p.failed].map(repo=>el('li',{text:repo.fullName+': '+repo.reason})))]));
+  }
   if(r.report){
     const reports=r.reports||[r.report];
     const report=reports.find(report=>report.rubricId===selectedRubricId)||reports[0];
     $('#rubric-cards').replaceChildren(...reports.map(item=>{const b=el('button',{type:'button',class:'rubric-card'+(item.rubricId===report.rubricId?' selected':''),'aria-pressed':String(item.rubricId===report.rubricId)},[el('span',{class:'rubric-card-name',text:item.rubricName}),el('strong',{text:number(item.score)}),el('span',{class:'rubric-card-coverage',text:number(item.coverage)+'% evidence coverage'}),el('span',{class:'rubric-card-band',text:item.band})]);b.onclick=()=>{selectedRubricId=item.rubricId;render(r);};return b;}));
     $('#selected-report-name').textContent=report.rubricName;
+    const insights=report.insights||r.insights;
+    if(insights){
+      $('#improvements').append(el('h2',{text:'Biggest areas for improvement'}),el('p',{class:'muted',text:'Ranked by the selected rubric’s weights and demonstrated score gaps. Missing evidence is listed separately.'}));
+      for(const [title,groups] of [['Demonstrated improvement opportunities',insights.demonstrated],['Evidence to collect',insights.evidenceGaps]]){
+        $('#improvements').append(el('h3',{text:title}));
+        if(!groups.length)$('#improvements').append(el('p',{text:'No qualifying findings in the available evidence.'}));
+        for(const group of groups)$('#improvements').append(el('article',{class:'criterion'},[el('h3',{text:group.title}),...group.criteria.map(c=>el('div',{},[el('strong',{text:c.criterionId+' '+c.title+(c.score==null?' · unknown':' · '+c.score+'/4')}),el('p',{text:c.rationale}),el('p',{class:'next',text:'Next: '+(c.nextValidation||'Collect additional evidence.')}),...(c.evidence||[]).map(ref=>el('a',{class:'evidence',href:ref.url,target:'_blank',rel:'noreferrer',text:ref.path+' · lines '+ref.start_line+'–'+ref.end_line}))]))]));
+      }
+    }
     $('#export').href='/api/reviews/'+r.id+'/export?rubric='+encodeURIComponent(report.rubricId);
     $('#rubric-weight-content').replaceChildren(el('p',{text:'Same evidence and criterion assessments; independent weights, coverage, and role requirements. Weights below reflect applicable-skill normalization.'}),el('ul',{},report.domains.map(d=>el('li',{text:d.name+': '+number(d.weight*100)+'%'+(!d.applicable?' (not applicable)':'')}))),el('p',{text:report.blockers.length?'Required evidence gaps: '+report.blockers.map(b=>b.id+' — '+b.reason).join('; '):'Role requirements meet the evidence coverage threshold.'}));
     $('#metrics').replaceChildren(...[['Observed maturity',number(report.score),report.band],['Evidence coverage',number(report.coverage)+'%','Unknown is separate from failure'],['Possible score range',number(report.lower)+'–'+number(report.upper),'Bounds for unobserved criteria; not statistical confidence']].map(([label,value,caption])=>el('article',{class:'metric'},[el('label',{text:label}),el('b',{text:value}),el('p',{text:caption})])));
@@ -49,6 +66,6 @@ function render(r){
     }
   }
   $('#collection-details').hidden=!r.evidence;
-  $('#collection-content').replaceChildren(el('p',{text:(r.evidence?.length||0)+' evidence items · '+(r.repository?.totalFiles||0)+' repository files · '+(r.repository?.collectedAt||'')}),el('code',{text:r.repository?.sha||''}),el('ul',{},[...(r.warnings||[]),...(r.validationWarnings||[])].map(text=>el('li',{text}))));
+  $('#collection-content').replaceChildren(el('p',{text:(r.evidence?.length||0)+' evidence items · '+(r.portfolio?r.portfolio.included.length+' repositories':(r.repository?.totalFiles||0)+' repository files')+' · '+(r.repository?.collectedAt||r.createdAt)}),el('code',{text:r.repository?.sha||''}),el('ul',{},[...(r.warnings||[]),...(r.validationWarnings||[])].map(text=>el('li',{text}))));
 }
 try{catalog=await api('/api/rubric');$('#criterion-total').textContent=catalog.rubric.domains.reduce((sum,d)=>sum+d.criteria.length,0)+' criteria across '+catalog.rubric.domains.length+' domains, including three specialist assessments.';$('#rubric-version').textContent='Criteria '+catalog.rubric.rubric_version+' · Scoring '+catalog.scoringConfig.rubric_version;await history();void checkHealth();if(/^[a-f0-9-]{36}$/.test(location.hash.slice(1)))await openReview(location.hash.slice(1));}catch(e){showError(e.message);}

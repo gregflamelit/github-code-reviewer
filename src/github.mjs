@@ -1,3 +1,5 @@
+import {createHash} from 'node:crypto';
+
 export function parseRepository(value) {
   let u; try { u=new URL(value); } catch { throw new Error('Enter a public GitHub repository URL.'); }
   const parts=u.pathname.replace(/\/$/,'').split('/').filter(Boolean);
@@ -72,5 +74,15 @@ export async function collectRepository(url,{signal,onProgress=()=>{},request=gi
   warnings.push('Bounded source sample: up to 36 text files, 14,000 characters each, 180,000 characters total. Repository code was not executed. Issues, PR diffs, workflow results, and repository settings are not collected in v1.');
   return {repository:{...parsed,sha:commit.sha,branch:repo.default_branch,description:repo.description,totalFiles:inventory.length,collectedAt:new Date().toISOString()},evidence,warnings};
 }
-import {createHash} from 'node:crypto';
+
+export function parseGitHubTarget(value){
+  let u;try{u=new URL(value);}catch{throw new Error('Enter a public GitHub profile or repository URL.');}
+  const parts=u.pathname.replace(/\/$/,'').split('/').filter(Boolean);
+  const profileTab=parts.length===1&&u.searchParams.size===1&&u.searchParams.get('tab')==='repositories';
+  if(u.protocol!=='https:'||u.hostname!=='github.com'||u.port||u.username||u.password||u.hash||(u.search&&!profileTab)||u.pathname.includes('//')||![1,2].includes(parts.length))throw new Error('Use https://github.com/username or https://github.com/owner/repository.');
+  if(parts.length===2)return {...parseRepository(value),kind:'repository'};
+  const owner=parts[0];
+  if(!/^[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?$/i.test(owner)||['settings','explore','topics','search','orgs','users','login','marketplace','notifications','pulls','issues'].includes(owner.toLowerCase()))throw new Error('Enter a GitHub account profile URL.');
+  return {kind:'portfolio',owner,url:'https://github.com/'+owner};
+}
 

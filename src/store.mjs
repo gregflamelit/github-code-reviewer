@@ -22,7 +22,7 @@ export function createStore(directory) {
   const store={
     save(review){review.updatedAt=new Date().toISOString();put.run(review.id,review.createdAt,review.updatedAt,review.status,JSON.stringify(review));return review;},
     get(id){const row=db.prepare('SELECT data FROM reviews WHERE id=?').get(id);return row?JSON.parse(row.data):null;},
-    list(){return db.prepare('SELECT data FROM reviews ORDER BY created DESC LIMIT 100').all().map(row=>{const r=JSON.parse(row.data);return {id:r.id,url:r.url,profile:r.profile,status:r.status,createdAt:r.createdAt,message:r.message,score:r.report?.score,coverage:r.report?.coverage,repository:r.repository};});},
+    list(){return db.prepare('SELECT data FROM reviews ORDER BY created DESC LIMIT 100').all().map(row=>{const r=JSON.parse(row.data);return {id:r.id,url:r.url,profile:r.profile,subjectType:r.subjectType,status:r.status,createdAt:r.createdAt,message:r.message,score:r.report?.score,coverage:r.report?.coverage,repository:r.repository,portfolio:r.portfolio?{owner:r.portfolio.owner,includedCount:r.portfolio.included.length}:undefined};});},
     close(){db.close();unlinkSync(lockPath);}
   };
   for(const row of db.prepare("SELECT data FROM reviews WHERE status IN ('queued','collecting','evaluating')").all()) {

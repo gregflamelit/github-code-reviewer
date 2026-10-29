@@ -1,6 +1,6 @@
 # GitHub Code Reviewer
 
-A local application that evaluates public GitHub repositories with your signed-in Codex CLI and 104 criteria (68 shared plus 36 specialist). One assessment produces three independently weighted reports: **AI Product Manager**, **AI Engineering Rubric**, and **AI Data Science Rubric**. Reports include scores, evidence coverage, exact quoted citations, missing evidence, and follow-up validation tasks.
+A local application that evaluates a public GitHub profile or repository with your signed-in Codex CLI and 104 criteria (68 shared plus 36 specialist). One consolidated assessment produces three independently weighted reports: **AI Product Manager**, **AI Engineering Rubric**, and **AI Data Science Rubric**. Reports include scores, evidence coverage, exact quoted citations, ranked improvements, missing evidence, and follow-up validation tasks.
 
 ## Run locally
 
@@ -20,7 +20,17 @@ The launcher can discover the Node and Codex runtimes bundled with the Codex des
 node server.mjs
 ```
 
-Open **http://127.0.0.1:4317**, paste a public repository URL such as https://github.com/octocat/Hello-World, and click **Evaluate repository**. All three reports are created automatically, including the specialist criteria. If Codex is not signed in, run `codex login` in your terminal first. Leave the server running while reviewing; use Ctrl+C to stop it.
+Open **http://127.0.0.1:4317**, paste a public profile URL such as `https://github.com/username` or a repository URL such as `https://github.com/octocat/Hello-World`, and click **Evaluate GitHub URL**. All three reports are created automatically, including the specialist criteria. If Codex is not signed in, run `codex login` in your terminal first. Leave the server running while reviewing; use Ctrl+C to stop it.
+
+## Profile evaluations
+
+The collector discovers up to 500 owned public repositories, ordered alphabetically during discovery, then selects up to eight eligible projects by most recent push. It excludes forks, archived, disabled, empty, profile README, and `.github` metadata repositories. Private repositories are never evaluated. A profile with no eligible source repositories returns an explicit error.
+
+Each selected repository is pinned to its own immutable commit and sampled under the existing file limits. Evidence is combined round-robin under a shared 180,000-character budget, with unique evidence IDs, repository names, and original commit links. The report lists collected projects and file counts, every exclusion and collection failure, discovery limits, and sampling warnings. This is a bounded portfolio sample, not a claim that every public artifact was inspected. Failed selected repositories or projects without sampled source force provisional reports.
+
+Codex assesses each criterion once against the combined evidence, weighing strengths and contradictions across relevant projects. Repository scores are not averaged. The same 104 criterion assessments feed the three existing role-specific weight systems; rubric definitions and score calculations are unchanged. Coverage measures observed criteria under each rubric's weights, not the percentage of repository files inspected. Unknown evidence does not count as a demonstrated weakness or a zero score.
+
+Each rubric shows its five highest-priority demonstrated improvement domains and five highest-priority evidence gaps separately. Priorities are calculated locally from effective criterion weights and score shortfalls (scores 0–2 with verified citations); unknown criteria are ranked by weight. Each domain shows up to three actionable criteria, their rationale, source links, and next validation steps. JSON exports include all criterion results, portfolio scope, and both per-rubric and consolidated rankings. Historical reports retain their original scores and evidence snapshots.
 
 The interface, evidence, and database are local. Selected public repository excerpts are sent through Codex to OpenAI for model inference. This is not an offline model.
 

@@ -1,4 +1,6 @@
 import {createHash} from 'node:crypto';
+import {balanceEvidence,evidenceCategory,summarizeEvidence} from './evidence.mjs';
+import {collectHistory} from './history.mjs';
 
 export function parseRepository(value) {
   let u; try { u=new URL(value); } catch { throw new Error('Enter a public GitHub repository URL.'); }
@@ -19,7 +21,7 @@ export async function github(path,{signal,token=process.env.GITHUB_TOKEN,fetcher
 
 export function priority(path) {
   if(/(^|\/)(node_modules|vendor|dist|build|\.git)\//i.test(path)||/lock\.(json|yaml)$|package-lock\.json$|\.min\.js$/i.test(path)) return -1;
-  if(!/\.(md|mdx|txt|json|ya?ml|toml|ini|cfg|js|jsx|ts|tsx|mjs|cjs|py|sql|prisma|go|rs|java|cs|rb|php|html|css|sh|ps1|tf|graphql|proto|ipynb)$|(^|\/)(Dockerfile|Makefile|LICENSE)$/i.test(path))return -1;
+  if(!/\.(md|mdx|rst|txt|json|ya?ml|toml|ini|cfg|js|jsx|ts|tsx|mjs|cjs|py|sql|prisma|go|rs|java|cs|rb|php|html|css|sh|ps1|tf|graphql|proto|ipynb|feature)$|(^|\/)(Dockerfile|Makefile|LICENSE)$/i.test(path))return -1;
   return (/^readme/i.test(path)?120:0)+(/architecture|adr|requirements|product|user|research|experiment|leakage|calibration|sampling|economics|adoption|recovery|reproducib|drift|causal/i.test(path)?75:0)+(/test|spec|eval/i.test(path)?65:0)+(/\.github\/workflows|schema|migration|auth|security|package\.json|pyproject/i.test(path)?60:0)+(/src\/|app\/|server|main\./i.test(path)?45:0)+(path.split('/').length<3?15:0);
 }
 
@@ -47,32 +49,47 @@ export async function collectRepository(url,{signal,onProgress=()=>{},request=gi
   const inventory=tree.tree.filter(f=>f.type==='blob');
   const candidates=inventory.filter(f=>f.size>0&&f.size<=100_000&&priority(f.path)>=0).sort((a,b)=>priority(b.path)-priority(a.path)||a.path.localeCompare(b.path));
   const evidence=[]; const warnings=[]; let budget=0;
-  const add=(item)=>{const content=item.content.replace(/\r\n/g,'\n'); if(budget+content.length>180_000)return false; evidence.push({...item,id:'E'+(evidence.length+1),content}); budget+=content.length;return true;};
-  add({type:'metadata',path:'Repository metadata',url:parsed.url,content:JSON.stringify({full_name:repo.full_name,description:repo.description,default_branch:repo.default_branch,commit_sha:commit.sha,commit_date:commit.commit?.committer?.date,tree_truncated:Boolean(tree.truncated),total_files:inventory.length},null,2)});
-  // Inventory is itself bounded, and never establishes the absence of an implementation.
-  add({type:'inventory',path:'File inventory',url:parsed.url+'/tree/'+commit.sha,content:inventory.slice(0,2500).map(f=>f.path).join('\n')});
-  for(const f of candidates.slice(0,36)) {
+  const collectedAt=new Date().toISOString();
+  const limits={files:60,fileCharacters:14000,fileBudget:130000,historyBudget:40000,totalCharacters:180000};
+  const categoryCharacters={};
+  const add=(item,ceiling=limits.totalCharacters)=>{const text=item.content.replace(/\r\n/g,'\n');const content=text.slice(0,Math.max(0,ceiling-budget));if(!content.length){warnings.push('Evidence budget omitted '+item.path);return false;}evidence.push({...item,id:'E'+(evidence.length+1),content,category:evidenceCategory(item),truncated:Boolean(item.truncated)||content.length<text.length});budget+=content.length;return true;};
+  const selected=balanceEvidence(candidates.map(f=>({...f,type:'file'}))).slice(0,limits.files);
+  const fetched=new Map(),collectedFiles=new Map();
+  async function collectFile(f,available){
     if(signal?.aborted)throw signal.reason;
-    if(budget>=170_000)break;
-    onProgress('Collecting '+f.path);
+    if(available<1||budget>=limits.fileBudget)return;
+    const category=evidenceCategory(f);
     try {
-      let text;
-      if(request===github)text=await rawFile(parsed.fullName,commit.sha,f,options);
-      else{const blob=await request(base+'/git/blobs/'+f.sha,options);if(blob.encoding!=='base64')continue;text=Buffer.from(blob.content.replace(/\s/g,''),'base64').toString('utf8');}
-      if(text.includes('\u0000'))continue;
-      const content=text.slice(0,14000);
-      add({type:'file',path:f.path,url:parsed.url+'/blob/'+commit.sha+'/'+f.path.split('/').map(encodeURIComponent).join('/'),content,truncated:text.length>content.length});
-    }catch(e){if(signal?.aborted)throw e;warnings.push('Could not collect '+f.path+': '+e.message);}
+      if(!fetched.has(f.path)){
+        onProgress('Collecting '+f.path);let text;
+        if(request===github)text=await rawFile(parsed.fullName,commit.sha,f,options);
+        else{const blob=await request(base+'/git/blobs/'+f.sha,options);if(blob.encoding==='base64')text=Buffer.from(blob.content.replace(/\s/g,''),'base64').toString('utf8');}
+        fetched.set(f.path,text&&!text.includes('\u0000')?text.replace(/\r\n/g,'\n'):null);
+      }
+      const text=fetched.get(f.path);if(!text)return;
+      const existing=collectedFiles.get(f.path);const oldLength=existing?.content.length||0;
+      const content=text.slice(0,Math.min(limits.fileCharacters,oldLength+available,oldLength+limits.fileBudget-budget));
+      const extra=content.length-oldLength;if(extra<=0)return;
+      if(existing){existing.content=content;existing.truncated=text.length>content.length;budget+=extra;}
+      else if(add({type:'file',category,path:f.path,url:parsed.url+'/blob/'+commit.sha+'/'+f.path.split('/').map(encodeURIComponent).join('/'),content,truncated:text.length>content.length},limits.fileBudget))collectedFiles.set(f.path,evidence.at(-1));
+      categoryCharacters[category]=(categoryCharacters[category]||0)+extra;
+    }catch(e){if(signal?.aborted)throw e;fetched.set(f.path,null);warnings.push('Could not collect '+f.path+': '+e.message);}
   }
-  // History is supplemental, not pinned implementation evidence. Record its collection time explicitly.
-  try {
-    const prs=await request(base+'/pulls?state=closed&sort=updated&direction=desc&per_page=4',options);
-    for(const pr of prs) add({type:'pull_request',path:'Pull request #'+pr.number,url:pr.html_url,content:JSON.stringify({number:pr.number,title:pr.title,body:pr.body?.slice(0,5000),author:pr.user?.login,head_sha:pr.head?.sha,merged_at:pr.merged_at,temporal_scope:'Supplemental recent history; may postdate evaluated commit'},null,2)});
-  }catch(e){if(signal?.aborted)throw e;warnings.push('PR history unavailable: '+e.message);}
+  const categoryCap=limits.fileBudget/new Set(selected.map(evidenceCategory)).size;
+  for(const f of selected)await collectFile(f,categoryCap-(categoryCharacters[evidenceCategory(f)]||0));
+  // Preserve category representation first, then reuse spare budget without refetching.
+  for(const f of selected)await collectFile(f,limits.fileBudget-budget);
+  const historyStart=budget;
+  const history=await collectHistory(base,{request,signal,collectedAt,warnings,onProgress,add:item=>add(item,historyStart+limits.historyBudget)});
+  add({type:'metadata',path:'Repository metadata',url:parsed.url,content:JSON.stringify({full_name:repo.full_name,description:repo.description,default_branch:repo.default_branch,commit_sha:commit.sha,commit_date:commit.commit?.committer?.date,tree_truncated:Boolean(tree.truncated),total_files:inventory.length},null,2)});
+  const paths=inventory.slice(0,2500).map(f=>f.path).join('\n');
+  add({type:'inventory',path:'File inventory',url:parsed.url+'/tree/'+commit.sha,content:paths.slice(0,9000),truncated:paths.length>9000||inventory.length>2500});
   if(tree.truncated)warnings.push('GitHub truncated the repository tree.');
   if(inventory.length>2500)warnings.push('File inventory limited to 2,500 paths.');
-  warnings.push('Bounded source sample: up to 36 text files, 14,000 characters each, 180,000 characters total. Repository code was not executed. Issues, PR diffs, workflow results, and repository settings are not collected in v1.');
-  return {repository:{...parsed,sha:commit.sha,branch:repo.default_branch,description:repo.description,totalFiles:inventory.length,collectedAt:new Date().toISOString()},evidence,warnings};
+  warnings.push('Bounded deep sample: up to 60 files across tests, documentation, and implementation; 14,000 characters per file, 130,000 file characters, 40,000 discussion characters, 180,000 total. Repository code and tests were not executed. Workflow results and repository settings are not verified. Discussion claims remain unverified.');
+  const candidateCounts=summarizeEvidence(candidates.map(f=>({type:'file',path:f.path,content:''})));
+  const evidenceCollection={version:'2.0',limits,candidateCounts,categories:summarizeEvidence(evidence),history};
+  return {repository:{...parsed,sha:commit.sha,branch:repo.default_branch,description:repo.description,totalFiles:inventory.length,collectedAt,evidenceCollection},evidence,warnings};
 }
 
 export function parseGitHubTarget(value){

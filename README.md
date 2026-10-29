@@ -4,15 +4,18 @@ A local application that evaluates a public GitHub profile or repository with yo
 
 ## Run locally
 
-Requires Node.js 24 or later, GitHub internet access, and an installed Codex CLI signed in with ChatGPT. No npm dependencies or separate API key are required. Normal Codex account access and usage limits apply.
+Requires Node.js 24 or later, GitHub internet access, and an installed Codex CLI signed in with ChatGPT. PDFKit is the app's PDF dependency. No separate OpenAI API key is required. Normal Codex account access and usage limits apply.
 
 The integration is verified against Codex CLI 0.164.0-alpha.11.1 and uses the experimental named permission-profile API. Older clients may need an update. Unsupported profiles fail explicitly rather than falling back to broader access.
 
 On Windows, from PowerShell:
 
 ```powershell
+pnpm install --frozen-lockfile
 .\start.ps1
 ```
+
+Use pnpm 11.25.0 for the committed lockfile. If you use npm instead, `npm install` also installs the declared dependencies before starting the app.
 
 The launcher can discover the Node and Codex runtimes bundled with the Codex desktop app. If script execution is disabled by your policy, run Node directly instead of changing your execution policy:
 
@@ -31,6 +34,20 @@ Each selected repository is pinned to its own immutable commit and sampled under
 Codex assesses each criterion once against the combined evidence, weighing strengths and contradictions across relevant projects. Repository scores are not averaged. The same 104 criterion assessments feed the three existing role-specific weight systems; rubric definitions and score calculations are unchanged. Coverage measures observed criteria under each rubric's weights, not the percentage of repository files inspected. Unknown evidence does not count as a demonstrated weakness or a zero score.
 
 Each rubric shows its five highest-priority demonstrated improvement domains and five highest-priority evidence gaps separately. Priorities are calculated locally from effective criterion weights and score shortfalls (scores 0–2 with verified citations); unknown criteria are ranked by weight. Each domain shows up to three actionable criteria, their rationale, source links, and next validation steps. JSON exports include all criterion results, portfolio scope, and both per-rubric and consolidated rankings. Historical reports retain their original scores and evidence snapshots.
+
+## Deeper evidence and PDF reports
+
+New reviews use collector version 2.0. Per repository, the collector balances tests (including fixtures and CI workflow definitions), documentation (including research, ADRs, and notebooks), and implementation rather than letting a large source tree fill every slot. It samples up to 60 files at 14,000 characters per file, with a 130,000-character file budget initially split across available file categories. Spare budget is redistributed without downloading files twice.
+
+Supplemental history gets a separate 40,000-character budget. It samples up to four issues from the 12 most recently updated issue/PR entries, ten recent issue/PR discussion comments, and two recent pull requests across open and closed states. For each sampled PR, it requests up to eight reviews, eight inline comments, and twelve changed files with patch excerpts capped at 2,000 characters. Discussion bodies are capped at 4,000 characters. Endpoint timestamps, first-page caps, unavailable responses, truncated text, and category counts are recorded. A rate/access restriction stops further history requests for that repository. Larger portfolios may require the optional `GITHUB_TOKEN` to avoid GitHub's unauthenticated rate limits.
+
+The repository total remains 180,000 characters. Portfolios retain a shared 180,000-character cap and reserve initial shares for tests (20%), documentation (20%), implementation (35%), issues (10%), and PR evidence (15%). Unused space is redistributed across deferred items. Collection limits describe sampled evidence; rubric coverage still measures supported criteria and may remain low when relevant evidence does not exist.
+
+Source and test files are pinned to the evaluated commit. Discussions, reviews, and patches are timestamped mutable snapshots that may postdate it, with their original GitHub links and any PR revision identifiers. Test code does not establish a passing run; an approval, discussion claim, or documented plan does not establish implemented or measured effectiveness. The evaluator receives these distinctions explicitly, and existing citation validation still applies to every scored finding.
+
+Use **Re-evaluate with fresh, deeper evidence** to create a separate review with current evidence and all three scores. Existing reports and their scores remain preserved. Retry/resume continues the saved snapshot instead of silently changing the evidence.
+
+Completed reports offer **Download all rubrics PDF** and **Download selected PDF** alongside JSON exports. PDFs contain score/coverage summaries, uncertainty bounds, repository scope, category counts, role-specific improvement priorities, evidence gaps, complete criterion assessments, quoted sources with clickable links, and collection/validation notes. PDF export works on historical completed reports too; it does not refresh evidence or change scores. API: `/api/reviews/:id/export?format=pdf`, optionally adding `&rubric=ai_product_manager`, `ai_engineering`, or `ai_data_science`.
 
 The interface, evidence, and database are local. Selected public repository excerpts are sent through Codex to OpenAI for model inference. This is not an offline model.
 
@@ -62,8 +79,8 @@ Only one application process can own a data directory. A process lock prevents a
 ## Scope and interpretation
 
 - The first version evaluates repository artifacts, not individual workers. Contributor attribution and work samples are future work.
-- At most 36 prioritized text files are sampled, each limited to 14,000 characters, within a total evidence budget of 180,000 characters. Collection warnings and per-file truncation are supplied to the evaluator. Large files, generated assets, dependency directories, and unsupported binary formats are skipped.
-- A file inventory and up to four recent PR summaries supplement source excerpts. PR history can postdate the evaluated commit and is labeled accordingly. Issues, PR diffs, review comments, workflow run results, and repository settings are not collected yet.
+- At most 60 category-balanced text files are sampled, each limited to 14,000 characters, within a 130,000-character file budget and a total evidence budget of 180,000 characters. Collection warnings and per-file truncation are supplied to the evaluator. Large files, generated assets, dependency directories, and unsupported binary formats are skipped.
+- A bounded file inventory and sampled issues, discussions, PR reviews, inline comments, and patch excerpts supplement source evidence. History can postdate the evaluated commit and is labeled accordingly. Workflow run results and repository settings are not verified.
 - Repository source is not installed, built, or executed. Test files demonstrate test design; they do not establish that tests passed.
 - Candidate repository files are never written as executable files or loaded as Codex configuration. Evidence is delivered as untrusted text. The Codex process uses a dedicated worker directory, read-only sandbox, disabled shell/apps/browser/plugin features, no configured MCP servers, and rejects interactive tool and approval requests.
 - Criteria version 2.0 and scoring version 2.0 are proposed defaults pending expert calibration. Unknown evidence has no score. Not-applicable criteria require contextual supporting evidence. Low coverage or an unobserved role-critical skill suppresses that role's maturity band. Full weights and role requirements are in [the three-rubric specification](docs/scoring-rubrics.md).

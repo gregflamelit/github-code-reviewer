@@ -57,5 +57,8 @@ test('HTTP profile submission returns a consolidated manifest, three reports, in
     const result=await(await fetch(base+'/api/reviews/'+created.id+'/export')).json();assert.equal(result.status,'completed');assert.equal(result.results.length,104);assert.equal(result.reports.length,3);assert.equal(result.portfolio.included[0].fullName,'alice/project');assert.equal(result.evidence[0].commit_sha,'a'.repeat(40));assert.ok(result.reports.every(r=>r.insights.evidenceGaps.length));
     const history=await(await fetch(base+'/api/reviews')).json();assert.equal(history[0].subjectType,'portfolio');assert.equal(history[0].portfolio.includedCount,1);
     const selected=await(await fetch(base+'/api/reviews/'+created.id+'/export?rubric=ai_data_science')).json();assert.equal(selected.report.rubricId,'ai_data_science');assert.equal(selected.portfolio.owner,'alice');assert.ok(selected.insights);
+    const pdf=await fetch(base+'/api/reviews/'+created.id+'/export?format=pdf');assert.equal(pdf.status,200);assert.equal(pdf.headers.get('content-type'),'application/pdf');assert.match(pdf.headers.get('content-disposition'),/attachment;.*\.pdf/);assert.equal(Buffer.from(await pdf.arrayBuffer()).subarray(0,5).toString(),'%PDF-');
+    const onePdf=await fetch(base+'/api/reviews/'+created.id+'/export?format=pdf&rubric=ai_data_science');assert.equal(onePdf.status,200);assert.equal(onePdf.headers.get('content-type'),'application/pdf');
+    assert.equal((await fetch(base+'/api/reviews/'+created.id+'/export?format=pdf&rubric=bad')).status,400);assert.equal((await fetch(base+'/api/reviews/'+created.id+'/export?format=invalid')).status,400);
   }finally{await new Promise(resolve=>app.server.close(resolve));app.store.close();rmSync(dir,{recursive:true,force:true});}
 });

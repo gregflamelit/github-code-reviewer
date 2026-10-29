@@ -1,4 +1,5 @@
 import {parseGitHubTarget,collectRepository,github} from './github.mjs';
+import {balanceEvidence,evidenceCategory,summarizeEvidence} from './evidence.mjs';
 
 export const portfolioLimits={maxRepositories:8,maxListingPages:5,repositoriesPerPage:100,maxEvidenceCharacters:180000};
 
@@ -35,12 +36,11 @@ export async function collectPortfolio(url,{signal,onProgress=()=>{},request=git
     try{
       const collection=await collectRepo(item.url,{signal,request,onProgress:message=>onProgress(item.name+': '+message)});
       if(!collection.evidence.some(e=>e.type==='file'))throw new Error('No supported source or documentation files could be collected.');
-      const manifest={...item,sha:collection.repository.sha,branch:collection.repository.branch,totalFiles:collection.repository.totalFiles,collectedAt:collection.repository.collectedAt,availableEvidenceItems:collection.evidence.length,incorporatedFiles:0,incorporatedCharacters:0,omittedEvidenceItems:0,warnings:collection.warnings};
+      const manifest={...item,sha:collection.repository.sha,branch:collection.repository.branch,totalFiles:collection.repository.totalFiles,collectedAt:collection.repository.collectedAt,evidenceCollection:collection.repository.evidenceCollection,availableEvidenceItems:collection.evidence.length,incorporatedFiles:0,incorporatedCharacters:0,omittedEvidenceItems:0,warnings:collection.warnings};
       included.push(manifest);
       // Source comes first: large inventories must not consume the shared budget
       // before any implementation from a selected project can be inspected.
-      const evidencePriority={file:0,metadata:1,pull_request:2,inventory:3};
-      buckets.push(collection.evidence.map(e=>({...e,repository:item.fullName,commit_sha:collection.repository.sha,originalPath:e.path,path:item.fullName+'/'+e.path})).sort((a,b)=>(evidencePriority[a.type]??4)-(evidencePriority[b.type]??4)));
+      buckets.push(balanceEvidence(collection.evidence.map(e=>({...e,repository:item.fullName,commit_sha:e.type==='file'?collection.repository.sha:undefined,originalPath:e.path,path:item.fullName+'/'+e.path}))));
     }catch(error){if(signal?.aborted)throw error;failed.push({...item,reason:error.message});}
   }
   if(!included.length)throw new Error('Evidence collection failed for every selected repository. '+failed.map(r=>r.name+': '+r.reason).join('; '));
@@ -49,22 +49,34 @@ export async function collectPortfolio(url,{signal,onProgress=()=>{},request=git
   let used=evidence[0].content.length;
   if(used>limits.maxEvidenceCharacters)throw new Error('Portfolio metadata exceeds the configured evidence limit.');
   // Round-robin selection prevents a single large repository from consuming the shared budget.
+  const shares={tests:.2,documentation:.2,implementation:.35,issues:.1,pull_requests:.15,context:0};
+  const usedCategories={},deferred=[];
+  function incorporate(item,index){
+    if(used+item.content.length>limits.maxEvidenceCharacters)return false;
+    evidence.push({...item,id:'E'+(evidence.length+1)});used+=item.content.length;
+    included[index].incorporatedCharacters+=item.content.length;
+    if(item.type==='file')included[index].incorporatedFiles++;
+    return true;
+  }
   let pending=true;
   while(pending){
     pending=false;
     for(let i=0;i<buckets.length;i++){
       const item=buckets[i].shift();if(!item)continue;pending=true;
-      if(used+item.content.length>limits.maxEvidenceCharacters){included[i].omittedEvidenceItems++;continue;}
-      evidence.push({...item,id:'E'+(evidence.length+1)});used+=item.content.length;
-      included[i].incorporatedCharacters+=item.content.length;
-      if(item.type==='file')included[i].incorporatedFiles++;
+      const category=evidenceCategory(item);
+      if((usedCategories[category]||0)+item.content.length>limits.maxEvidenceCharacters*(shares[category]||0)){deferred.push({item,index:i});continue;}
+      if(incorporate(item,i))usedCategories[category]=(usedCategories[category]||0)+item.content.length;
+      else deferred.push({item,index:i});
     }
   }
+  for(const {item,index}of deferred)if(!incorporate(item,index))included[index].omittedEvidenceItems++;
+  scope.evidenceCategories=summarizeEvidence(evidence);
+  for(const repo of included)repo.incorporatedCategories=summarizeEvidence(evidence.filter(e=>e.repository===repo.fullName));
   // Metadata-only sampling cannot establish any capability in an omitted project.
   const warnings=[
     'Consolidated portfolio inspection: one assessment over sampled artifacts, not a personal proficiency rating or an average of repository scores.',
     'Combined evidence is capped at '+limits.maxEvidenceCharacters+' characters and selected round-robin across repositories. Per-repository collection limits still apply.',
-    'Repository code was not executed. Issues, full PR discussions, workflow results, and repository settings are not verified.'
+    'Repository code and tests were not executed. Sampled issues, PR discussions, reviews, and diff excerpts are mutable supplemental evidence; claims are not verified results. Workflow results and repository settings are not verified.'
   ];
   if(listingTruncated)warnings.push('Repository discovery reached its page limit; additional public repositories may exist.');
   if(eligible.length>selected.length)warnings.push('Only '+selected.length+' of '+eligible.length+' discovered eligible repositories were selected.');

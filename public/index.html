@@ -8,7 +8,7 @@
     <div class="workspace-label">YOUR WORKSPACE</div>
     <button id="new-review" class="nav active">＋ &nbsp; New evaluation</button>
     <div class="history-title">RECENT EVALUATIONS</div><nav id="history" aria-label="Review history"><p class="muted">No evaluations yet</p></nav>
-    <div class="sidebar-bottom"><span class="local-dot"></span> Local workspace <span class="version">v0.3</span><p>Your reports stay on this computer.</p><a href="https://github.com/gregflamelit/github-code-reviewer" target="_blank" rel="noreferrer">View project ↗</a></div>
+    <div class="sidebar-bottom"><span class="local-dot"></span> Local workspace <span class="version">v0.4</span><p>Your reports stay on this computer.</p><a href="https://github.com/gregflamelit/github-code-reviewer" target="_blank" rel="noreferrer">View project ↗</a></div>
   </aside>
   <main id="main">
     <header><div class="breadcrumb">Workspace <span>/</span> Portfolio evaluation</div><span id="connection" class="connection">Checking Codex…</span></header>
@@ -32,9 +32,10 @@
       <div id="progress" class="progress-card" role="status" aria-live="polite"><span class="spinner"></span><div><strong id="status"></strong><p id="progress-message"></p></div></div>
       <div id="review-error" class="error" role="alert" hidden></div>
       <div id="rubric-cards" class="rubric-cards" aria-label="Choose rubric report" hidden></div>
-      <div id="selected-report-heading" class="selected-report-heading" hidden><h2 id="selected-report-name"></h2><a id="export" class="secondary">Export selected report ↗</a></div>
+      <div id="selected-report-heading" class="selected-report-heading" hidden><h2 id="selected-report-name"></h2><div class="actions"><a id="export" class="secondary">Selected JSON ↗</a><a id="export-pdf" class="secondary">Download selected PDF ↓</a></div></div>
       <div id="metrics" class="metric-grid" hidden></div>
       <div id="report-notice" class="notice" hidden></div>
+      <div id="deep-evidence" class="collection" hidden><h2>Evidence by category</h2><p id="evidence-categories"></p><p>Category counts describe the collected sample. They are separate from rubric evidence coverage. Tests were inspected, not executed; discussions and approvals are unverified claims.</p><details id="discussion-scope" hidden></details><button id="refresh-evidence" class="secondary">Re-evaluate with fresh, deeper evidence</button><a id="export-all-pdf" class="secondary">Download all rubrics PDF ↓</a></div>
       <details id="rubric-weights" class="collection" hidden><summary>Weights and role requirements for this report</summary><div id="rubric-weight-content"></div></details>
       <section id="portfolio-scope" class="collection" hidden></section>
       <section id="improvements" hidden></section>

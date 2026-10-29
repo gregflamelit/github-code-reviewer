@@ -17,6 +17,14 @@ function render(r){
   $('#review-title').textContent=r.repository?.fullName||r.url.replace('https://github.com/','');
   $('#review-meta').textContent=['Three rubric reports',r.portfolio?r.portfolio.included.length+' public repositories · consolidated assessment':r.repository?.sha?'Commit '+r.repository.sha.slice(0,12):'Collecting evidence','Repository evidence only'].join('  ·  ');
   const busy=running.has(r.status);$('#progress').hidden=!busy;$('#status').textContent=r.status[0].toUpperCase()+r.status.slice(1);$('#progress-message').textContent=r.message;
+  $('#deep-evidence').hidden=!r.evidence;
+  const collections=(r.portfolio?.included||[r.repository]).filter(repo=>repo?.evidenceCollection);
+  $('#evidence-categories').textContent=(collections.length?'Deep evidence v2. ':'Historical evidence snapshot. Re-evaluate to use expanded collection. ')+Object.entries(r.evidenceCategories||{}).map(([category,stats])=>category.replaceAll('_',' ')+': '+stats.items+' items'+(stats.truncated?' ('+stats.truncated+' excerpts truncated)':'')).join(' · ');
+  $('#discussion-scope').hidden=!collections.length;
+  $('#discussion-scope').replaceChildren(el('summary',{text:'Discussion collection status and limits'}),...collections.map(repo=>el('div',{},[el('strong',{text:repo.fullName}),el('ul',{},(repo.evidenceCollection.history?.endpoints||[]).map(endpoint=>el('li',{text:endpoint.path+' · '+endpoint.status+(endpoint.returned!=null?' · '+endpoint.returned+' returned':'')+(endpoint.possiblyTruncated?' · sample cap reached':'')+(endpoint.reason?' · '+endpoint.reason:'')})))])));
+  $('#refresh-evidence').hidden=busy;
+  $('#refresh-evidence').onclick=async()=>{try{const newer=await api('/api/reviews',{method:'POST',body:JSON.stringify({url:r.url})});await openReview(newer.id);}catch(e){$('#review-error').hidden=false;$('#review-error').textContent=e.message;}};
+  $('#export-all-pdf').hidden=r.status!=='completed';$('#export-all-pdf').href='/api/reviews/'+r.id+'/export?format=pdf';
   const incomplete=reviewCatalog.rubric.domains.some(d=>d.criteria.some(c=>!r.results?.some(row=>row.criterion_id===c.id)));
   $('#upgrade').hidden=r.status!=='completed'||(reviewCatalog.rubric.rubric_version===catalog.rubric.rubric_version&&reviewCatalog.scoringConfig.rubric_version===catalog.scoringConfig.rubric_version);
   $('#upgrade').onclick=async()=>{try{const newer=await api('/api/reviews/'+r.id+'/upgrade',{method:'POST',body:'{}'});await openReview(newer.id);}catch(e){$('#review-error').hidden=false;$('#review-error').textContent=e.message;}};
@@ -50,6 +58,7 @@ function render(r){
       }
     }
     $('#export').href='/api/reviews/'+r.id+'/export?rubric='+encodeURIComponent(report.rubricId);
+    $('#export-pdf').href='/api/reviews/'+r.id+'/export?format=pdf&rubric='+encodeURIComponent(report.rubricId);
     $('#rubric-weight-content').replaceChildren(el('p',{text:'Same evidence and criterion assessments; independent weights, coverage, and role requirements. Weights below reflect applicable-skill normalization.'}),el('ul',{},report.domains.map(d=>el('li',{text:d.name+': '+number(d.weight*100)+'%'+(!d.applicable?' (not applicable)':'')}))),el('p',{text:report.blockers.length?'Required evidence gaps: '+report.blockers.map(b=>b.id+' — '+b.reason).join('; '):'Role requirements meet the evidence coverage threshold.'}));
     $('#metrics').replaceChildren(...[['Observed maturity',number(report.score),report.band],['Evidence coverage',number(report.coverage)+'%','Unknown is separate from failure'],['Possible score range',number(report.lower)+'–'+number(report.upper),'Bounds for unobserved criteria; not statistical confidence']].map(([label,value,caption])=>el('article',{class:'metric'},[el('label',{text:label}),el('b',{text:value}),el('p',{text:caption})])));
     $('#report-notice').textContent='This report assesses repository artifacts, not a person’s proficiency. '+(!report.eligible?'The evidence is insufficient for an overall maturity band under this rubric. ':'')+(incomplete?'Resume to complete this review under its saved rubric. ':'')+(reviewCatalog.rubric.rubric_version!==catalog.rubric.rubric_version?'Historical rubric preserved. Use Evaluate latest rubric to assess new specialist criteria in a separate report. ':'')+(r.upgradedFrom?'This review reuses compatible assessments and the evidence snapshot of an earlier review. ':'')+'Open each domain to inspect findings and scoring anchors. Each rubric calculates its own score and coverage; citation checks verify source locations, not every conclusion.';

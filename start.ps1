@@ -15,4 +15,5 @@ if (-not $reviewerCodex -and -not $env:CODEX_BIN) {
     }
 }
 $reviewerNodePath = if ($reviewerNode.Source) { $reviewerNode.Source } else { $reviewerNode.FullName }
+if (-not (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'node_modules/pdfkit'))) { throw 'Install app dependencies first: run npm install (or pnpm install), then rerun start.ps1.' }
 & $reviewerNodePath (Join-Path $PSScriptRoot 'server.mjs')

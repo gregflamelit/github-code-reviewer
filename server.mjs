@@ -7,12 +7,14 @@ import { createJobs } from './src/jobs.mjs';
 import { CodexClient } from './src/codex.mjs';
 import { rubric,profiles,scoringConfig,getReviewCatalog,criterionCount } from './src/rubric.mjs';
 import {buildInsights} from './src/insights.mjs';
+import {summarizeEvidence} from './src/evidence.mjs';
+import {createReportPdf} from './src/pdf.mjs';
 
 export function createApplication({dataDir=process.env.REVIEWER_DATA_DIR||resolve('.local'),jobsFactory=createJobs,clientFactory=o=>new CodexClient(o)}={}){
   const store=createStore(dataDir);const jobs=jobsFactory({store,dataDir});
   const assets={'/':['index.html','text/html; charset=utf-8'],'/app.js':['app.js','text/javascript; charset=utf-8'],'/style.css':['style.css','text/css; charset=utf-8']};
   let healthCache=null;
-  const send=(res,status,data,headers={})=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",...headers});res.end(typeof data==='string'?data:JSON.stringify(data));};
+  const send=(res,status,data,headers={})=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",...headers});res.end(typeof data==='string'||Buffer.isBuffer(data)?data:JSON.stringify(data));};
   const server=http.createServer(async(req,res)=>{
     try{
       const expected='127.0.0.1:'+server.address().port;
@@ -32,11 +34,15 @@ export function createApplication({dataDir=process.env.REVIEWER_DATA_DIR||resolv
       const match=path.match(/^\/api\/reviews\/([a-f0-9-]{36})(?:\/(retry|cancel|export|upgrade))?$/);
       if(req.method==='GET' && match){const r=store.get(match[1]);if(!r)return send(res,404,{error:'Review not found.'});
         r.catalog=getReviewCatalog(r);r.expectedCriteria=criterionCount(r.catalog);
+        r.evidenceCategories=summarizeEvidence(r.evidence);
         // Older single-report reviews retain their original aggregates, including narrower scope.
         if(r.report&&!r.reports){r.report={...r.report,rubricId:r.report.rubricId||'ai_product_manager',rubricName:r.report.rubricName||'AI Product Manager',scoringVersion:r.report.scoringVersion||r.scoringVersion||'1.1',blockers:r.report.blockers||[]};r.reports=[r.report];}
         if(r.reports){r.insights??=buildInsights(r.reports,r.catalog,r.validationWarnings||[]);for(const report of r.reports)report.insights??=buildInsights([report],r.catalog,r.validationWarnings||[]);}
         if(match[2]==='export'){
           const selected=url.searchParams.get('rubric');
+          const format=url.searchParams.get('format')||'json';
+          if(!['json','pdf'].includes(format))return send(res,400,{error:'Choose JSON or PDF format.'});
+          if(format==='pdf')return send(res,200,await createReportPdf(r,{rubricId:selected}),{'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="'+(selected||'consolidated')+'-'+r.id+'.pdf"'});
           if(selected){const report=r.reports?.find(report=>report.rubricId===selected);if(!report)return send(res,400,{error:'Unknown or unavailable rubric report.'});return send(res,200,{...r,reports:undefined,report},{'Content-Disposition':'attachment; filename="'+selected+'-'+r.id+'.json"'});}
           return send(res,200,r,{'Content-Disposition':'attachment; filename="review-'+r.id+'.json"'});
         }

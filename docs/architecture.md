@@ -4,9 +4,9 @@ The first version is a single Node.js 24 process serving browser assets and a lo
 
 ## Review pipeline
 
-The browser submits a repository URL to POST /api/reviews. The job runner first verifies the Codex connection, then resolves the public repository's default branch to an immutable SHA. The GitHub collector fetches a bounded inventory and prioritized text blobs and records scope warnings. All 68 criteria are assessed once, then three independent weighting systems produce AI Product Manager, AI Engineering Rubric, and AI Data Science Rubric reports. Source is delivered to the evaluator as data, never installed or executed.
+The browser submits a repository URL to POST /api/reviews. The job runner first verifies the Codex connection, then resolves the public repository's default branch to an immutable SHA. The GitHub collector fetches a bounded inventory and prioritized text blobs and records scope warnings. All 104 criteria are assessed once, then three independent weighting systems produce AI Product Manager, AI Engineering Rubric, and AI Data Science Rubric reports. Source is delivered to the evaluator as data, never installed or executed.
 
-Each group of up to four rubric domains is assessed in an ephemeral Codex thread. The adapter launches Codex App Server as a local child process, uses JSON-RPC over stdio, and requests schema-constrained output. The integration uses the experimental named permission-profile protocol supported by the tested CLI; it fails closed if the installed CLI cannot enforce the requested profile. The evidence_only profile grants minimal platform reads with command networking disabled. Shell, browser, apps, plugins, and related execution features are disabled; configured MCP server and plugin tables are overridden to empty. Interactive server tool/approval requests are rejected. Candidate content is supplied only as prompt text and is never loaded as AGENTS.md or project configuration. This is defense in depth, not an OS container around the entire trusted Codex harness.
+Each bounded batch of up to four domains and 16 criteria is assessed in an ephemeral Codex thread. The adapter launches Codex App Server as a local child process, uses JSON-RPC over stdio, and requests schema-constrained output. The integration uses the experimental named permission-profile protocol supported by the tested CLI; it fails closed if the installed CLI cannot enforce the requested profile. The evidence_only profile grants minimal platform reads with command networking disabled. Shell, browser, apps, plugins, and related execution features are disabled; configured MCP server and plugin tables are overridden to empty. Interactive server tool/approval requests are rejected. Candidate content is supplied only as prompt text and is never loaded as AGENTS.md or project configuration. This is defense in depth, not an OS container around the entire trusted Codex harness.
 
 Codex retains ownership of its existing ChatGPT credentials; the application does not inspect authentication files or persist keys. Model inference uses OpenAI services. Evaluation code never calls the OpenAI API directly.
 
@@ -20,7 +20,7 @@ The listener binds to 127.0.0.1. Host must match its exact loopback address and 
 
 ## Initial release limits
 
-The collector is a prioritized sample, not exhaustive repository analysis. File content and history have distinct temporal scopes. Limited inspection cannot establish global absence. The report explicitly separates observed maturity and evidence coverage. Contributor proficiency, arbitrary code execution, workflow-run collection, full PR discussion analysis, critical readiness adjudication, and human overrides are not implemented in version 0.1.
+The collector is a prioritized sample, not exhaustive repository analysis. File content and history have distinct temporal scopes. Limited inspection cannot establish global absence. The report explicitly separates observed maturity and evidence coverage. Contributor proficiency, arbitrary code execution, workflow-run collection, full PR discussion analysis, critical readiness adjudication, and human overrides are not implemented in version 0.2.
 
 ## Acceptance checks
 
@@ -31,3 +31,7 @@ The collector is a prioritized sample, not exhaustive repository analysis. File 
 - Failed reviews can resume completed batches; cancelled reviews do not become completed.
 - Exported JSON includes evidence, warnings, rubric version, revision, and scoring results.
 - Source control excludes local evidence, databases, and credentials.
+
+## Rubric snapshots
+
+Every new review stores complete criteria and scoring configurations. Specialist domains use explicit criterion weights and each contributes a reserved 30% to its own role. Legacy reviews resolve archived definitions; API reads, retries, and exports use those definitions. Upgrade creates a separate review at the same evidence snapshot, reuses only byte-equivalent criterion definitions, records the source review and reused IDs, and evaluates new specialist domains.

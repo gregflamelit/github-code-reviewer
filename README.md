@@ -1,6 +1,6 @@
 # GitHub Code Reviewer
 
-A local application that evaluates public GitHub repositories with your signed-in Codex CLI and 68 shared criteria. One assessment produces three independently weighted reports: **AI Product Manager**, **AI Engineering Rubric**, and **AI Data Science Rubric**. Reports include scores, evidence coverage, exact quoted citations, missing evidence, and follow-up validation tasks.
+A local application that evaluates public GitHub repositories with your signed-in Codex CLI and 104 criteria (68 shared plus 36 specialist). One assessment produces three independently weighted reports: **AI Product Manager**, **AI Engineering Rubric**, and **AI Data Science Rubric**. Reports include scores, evidence coverage, exact quoted citations, missing evidence, and follow-up validation tasks.
 
 ## Run locally
 
@@ -20,7 +20,7 @@ The launcher can discover the Node and Codex runtimes bundled with the Codex des
 node server.mjs
 ```
 
-Open **http://127.0.0.1:4317**, paste a public repository URL such as https://github.com/octocat/Hello-World, and click **Evaluate repository**. All three reports are created automatically. If Codex is not signed in, run `codex login` in your terminal first. Leave the server running while reviewing; use Ctrl+C to stop it.
+Open **http://127.0.0.1:4317**, paste a public repository URL such as https://github.com/octocat/Hello-World, and click **Evaluate repository**. All three reports are created automatically, including the specialist criteria. If Codex is not signed in, run `codex login` in your terminal first. Leave the server running while reviewing; use Ctrl+C to stop it.
 
 The interface, evidence, and database are local. Selected public repository excerpts are sent through Codex to OpenAI for model inference. This is not an offline model.
 
@@ -40,7 +40,7 @@ Credentials are never stored by this application. Codex manages its existing Cha
 
 1. The local Node server starts Codex App Server over stdio and verifies authentication.
 2. The collector resolves the default branch to an immutable commit SHA and retrieves a bounded file inventory and source sample through GitHub's API.
-3. Codex evaluates groups of up to four rubric domains against that evidence and returns schema-constrained JSON.
+3. Codex evaluates bounded batches of up to four rubric domains and 16 criteria against that evidence and returns schema-constrained JSON.
 4. Local validation rejects invalid criterion states, duplicate IDs, and out-of-scope criteria. Unsupported scores and exclusions become unknown. Citations must contain an exact quote at a valid range in a collected evidence item.
 5. Application code independently calculates weighted maturity, coverage, unknown-score bounds, and role-specific band eligibility for all three rubrics. Codex does not calculate the final scores. Switch report cards to inspect each rubric or export all three together.
 6. SQLite saves evidence, per-batch results, progress, and reports. Failed or interrupted reviews can resume using the captured evidence and completed batches. Retry does not fetch a newer commit; start a new review to refresh evidence.
@@ -56,8 +56,12 @@ Only one application process can own a data directory. A process lock prevents a
 - A file inventory and up to four recent PR summaries supplement source excerpts. PR history can postdate the evaluated commit and is labeled accordingly. Issues, PR diffs, review comments, workflow run results, and repository settings are not collected yet.
 - Repository source is not installed, built, or executed. Test files demonstrate test design; they do not establish that tests passed.
 - Candidate repository files are never written as executable files or loaded as Codex configuration. Evidence is delivered as untrusted text. The Codex process uses a dedicated worker directory, read-only sandbox, disabled shell/apps/browser/plugin features, no configured MCP servers, and rejects interactive tool and approval requests.
-- Criteria version 1.0 and scoring version 1.1 are proposed defaults pending expert calibration. Unknown evidence has no score. Not-applicable criteria require contextual supporting evidence. Low coverage or an unobserved role-critical skill suppresses that role's maturity band. Full weights and role requirements are in [the three-rubric specification](docs/scoring-rubrics.md).
+- Criteria version 2.0 and scoring version 2.0 are proposed defaults pending expert calibration. Unknown evidence has no score. Not-applicable criteria require contextual supporting evidence. Low coverage or an unobserved role-critical skill suppresses that role's maturity band. Full weights and role requirements are in [the three-rubric specification](docs/scoring-rubrics.md).
 - Citation validation establishes existence and exact text, not semantic truth. Findings still require critical review. Verified critical readiness gates and human overrides are not automated in this release; domain findings must be inspected before decisions.
+
+## Historical reports and upgrades
+
+New reviews pin complete criteria and scoring snapshots. Retry uses the saved version. Existing criteria 1.0 / scoring 1.1 reports retain their original results. **Evaluate latest rubric** creates a separate review using the same captured evidence and unchanged compatible assessments, then evaluates the new specialist criteria. Use a new repository review to collect fresh evidence.
 
 ## Storage and source control
 
@@ -72,6 +76,6 @@ node --check server.mjs
 
 Tests cover scoring and coverage gates, exact citation validation, repository URL boundaries, bounded collection, persistence and interrupted reviews, local HTTP protection, and Codex protocol behavior with a deterministic fake process. Live smoke verification is separate and uses the real signed-in Codex installation.
 
-Key files: `server.mjs`, `src/github.mjs`, `src/codex.mjs`, `src/rubric.mjs`, `src/jobs.mjs`, `src/store.mjs`, and `public/`. Shared criteria and the original balanced weights are in `evaluation-rubric.json`; the three role weighting systems are in `scoring-rubrics.json`. The complete criteria policy is in `evaluation-rubric.md`, with role overrides in `docs/scoring-rubrics.md`.
+Key files: `server.mjs`, `src/github.mjs`, `src/codex.mjs`, `src/rubric.mjs`, `src/jobs.mjs`, `src/store.mjs`, and `public/`. All 104 criteria are in `evaluation-rubric.json`; current role weights are in `scoring-rubrics.json`. The authoritative version 2.0 policy and all specialist anchors are in `docs/scoring-rubrics.md`. Shared historical anchors remain in `evaluation-rubric.md`, and archived JSON definitions are under `rubric-versions/`.
 
 Official integration reference: [Codex App Server](https://learn.chatgpt.com/docs/app-server).

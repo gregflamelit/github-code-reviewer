@@ -18,7 +18,7 @@ export async function github(path,{signal,token=process.env.GITHUB_TOKEN,fetcher
 export function priority(path) {
   if(/(^|\/)(node_modules|vendor|dist|build|\.git)\//i.test(path)||/lock\.(json|yaml)$|package-lock\.json$|\.min\.js$/i.test(path)) return -1;
   if(!/\.(md|mdx|txt|json|ya?ml|toml|ini|cfg|js|jsx|ts|tsx|mjs|cjs|py|sql|prisma|go|rs|java|cs|rb|php|html|css|sh|ps1|tf|graphql|proto|ipynb)$|(^|\/)(Dockerfile|Makefile|LICENSE)$/i.test(path))return -1;
-  return (/^readme/i.test(path)?120:0)+(/architecture|adr|requirements|product|user|research/i.test(path)?75:0)+(/test|spec|eval/i.test(path)?65:0)+(/\.github\/workflows|schema|migration|auth|security|package\.json|pyproject/i.test(path)?60:0)+(/src\/|app\/|server|main\./i.test(path)?45:0)+(path.split('/').length<3?15:0);
+  return (/^readme/i.test(path)?120:0)+(/architecture|adr|requirements|product|user|research|experiment|leakage|calibration|sampling|economics|adoption|recovery|reproducib|drift|causal/i.test(path)?75:0)+(/test|spec|eval/i.test(path)?65:0)+(/\.github\/workflows|schema|migration|auth|security|package\.json|pyproject/i.test(path)?60:0)+(/src\/|app\/|server|main\./i.test(path)?45:0)+(path.split('/').length<3?15:0);
 }
 
 export async function collectRepository(url,{signal,onProgress=()=>{},request=github}={}) {

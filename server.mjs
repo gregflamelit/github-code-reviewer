@@ -5,7 +5,7 @@ import { join,resolve } from 'node:path';
 import { createStore } from './src/store.mjs';
 import { createJobs } from './src/jobs.mjs';
 import { CodexClient } from './src/codex.mjs';
-import { rubric,profiles,scoringConfig,aggregateAll } from './src/rubric.mjs';
+import { rubric,profiles,scoringConfig,getReviewCatalog,criterionCount } from './src/rubric.mjs';
 
 export function createApplication({dataDir=process.env.REVIEWER_DATA_DIR||resolve('.local'),jobsFactory=createJobs,clientFactory=o=>new CodexClient(o)}={}){
   const store=createStore(dataDir);const jobs=jobsFactory({store,dataDir});
@@ -28,9 +28,11 @@ export function createApplication({dataDir=process.env.REVIEWER_DATA_DIR||resolv
         healthCache={at:Date.now(),value};return send(res,200,value);
       }
       if(req.method==='GET' && path==='/api/reviews')return send(res,200,store.list());
-      const match=path.match(/^\/api\/reviews\/([a-f0-9-]{36})(?:\/(retry|cancel|export))?$/);
+      const match=path.match(/^\/api\/reviews\/([a-f0-9-]{36})(?:\/(retry|cancel|export|upgrade))?$/);
       if(req.method==='GET' && match){const r=store.get(match[1]);if(!r)return send(res,404,{error:'Review not found.'});
-        if(r.report&&!r.reports){r.reports=aggregateAll(r.results||[]);r.report=r.reports[0];}
+        r.catalog=getReviewCatalog(r);r.expectedCriteria=criterionCount(r.catalog);
+        // Older single-report reviews retain their original aggregates, including narrower scope.
+        if(r.report&&!r.reports){r.report={...r.report,rubricId:r.report.rubricId||'ai_product_manager',rubricName:r.report.rubricName||'AI Product Manager',scoringVersion:r.report.scoringVersion||r.scoringVersion||'1.1',blockers:r.report.blockers||[]};r.reports=[r.report];}
         if(match[2]==='export'){
           const selected=url.searchParams.get('rubric');
           if(selected){const report=r.reports?.find(report=>report.rubricId===selected);if(!report)return send(res,400,{error:'Unknown or unavailable rubric report.'});return send(res,200,{...r,reports:undefined,report},{'Content-Disposition':'attachment; filename="'+selected+'-'+r.id+'.json"'});}
@@ -43,6 +45,7 @@ export function createApplication({dataDir=process.env.REVIEWER_DATA_DIR||resolv
         const body=await readJson(req);
         if(path==='/api/reviews')return send(res,202,jobs.start(body));
         if(match?.[2]==='retry')return send(res,202,jobs.retry(match[1]));
+        if(match?.[2]==='upgrade')return send(res,202,jobs.upgrade(match[1]));
         if(match?.[2]==='cancel'){jobs.cancel(match[1]);return send(res,202,{status:'cancelling'});}
       }
       send(res,404,{error:'Not found.'});

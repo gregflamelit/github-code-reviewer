@@ -1,0 +1,1065 @@
+{
+  "rubric_version": "1.0",
+  "status": "proposed_defaults_pending_calibration",
+  "specification": "evaluation-rubric.md",
+  "pool_weights_percent": {
+    "core": 60,
+    "functional": 40
+  },
+  "score_scale": {
+    "0": "Demonstrated failure or required behavior demonstrably absent",
+    "1": "Fragile",
+    "2": "Functional",
+    "3": "Robust",
+    "4": "Justified and validated"
+  },
+  "unscored_states": [
+    "unknown",
+    "not_applicable"
+  ],
+  "confidence_values": [
+    "low",
+    "medium",
+    "high"
+  ],
+  "coverage_gates_percent": {
+    "overall": 80,
+    "each_core_domain": 75,
+    "each_role_critical_functional_domain": 75
+  },
+  "maturity_bands": [
+    {
+      "minimum": 0,
+      "maximum_exclusive": 25,
+      "label": "Major gaps demonstrated"
+    },
+    {
+      "minimum": 25,
+      "maximum_exclusive": 50,
+      "label": "Fragile"
+    },
+    {
+      "minimum": 50,
+      "maximum_exclusive": 75,
+      "label": "Functional"
+    },
+    {
+      "minimum": 75,
+      "maximum_exclusive": 90,
+      "label": "Robust"
+    },
+    {
+      "minimum": 90,
+      "maximum_inclusive": 100,
+      "label": "Well justified and validated"
+    }
+  ],
+  "robust_band_domain_floor": 75,
+  "domains": [
+    {
+      "id": "C1",
+      "name": "Solutions Architecture",
+      "pool": "core",
+      "weight": 15,
+      "weight_basis": "overall_percent",
+      "criteria": [
+        {
+          "id": "C1.1",
+          "name": "Requirements and constraints",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Architecture addresses stated users, data, scale, cost, latency, and risk constraints that matter to the project",
+          "github_evidence": [
+            "README scope",
+            "linked requirement issues",
+            "docs/requirements",
+            "architecture decision records",
+            "implementation matching the stated constraints"
+          ]
+        },
+        {
+          "id": "C1.2",
+          "name": "Boundaries and contracts",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Components have clear responsibilities; dependencies and interfaces support the intended changes",
+          "github_evidence": [
+            "src modules",
+            "package boundaries",
+            "API schemas",
+            "dependency manifests",
+            "architecture diagrams reconciled with imports and calls"
+          ]
+        },
+        {
+          "id": "C1.3",
+          "name": "Failure and data flow design",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Important failure paths, consistency needs, and trust boundaries have explicit handling",
+          "github_evidence": [
+            "Sequence diagrams",
+            "queue consumers",
+            "transaction boundaries",
+            "timeout and recovery code",
+            "failure tests"
+          ]
+        },
+        {
+          "id": "C1.4",
+          "name": "Tradeoffs and evolution",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Choices are proportionate and alternatives, cost implications, and likely changes are addressed",
+          "github_evidence": [
+            "docs/adr",
+            "PR rationale",
+            "benchmarks",
+            "migration plans",
+            "dependency replacement or refactoring history"
+          ]
+        }
+      ],
+      "domain_level_examples": "Level 2 example: the main workflow has understandable components, but dependency failure and data ownership are unclear. Level 4 example: a documented choice between a simple service and a queue-based design is supported by representative failure or load results. Elaborate architecture alone earns no bonus."
+    },
+    {
+      "id": "C2",
+      "name": "Human Centered Design",
+      "pool": "core",
+      "weight": 15,
+      "weight_basis": "overall_percent",
+      "criteria": [
+        {
+          "id": "C2.1",
+          "name": "User and task understanding",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Identifies intended users, their goals, and meaningful workflow constraints",
+          "github_evidence": [
+            "Personas grounded in research",
+            "user stories",
+            "problem issues",
+            "interview summaries",
+            "CLI task examples"
+          ]
+        },
+        {
+          "id": "C2.2",
+          "name": "Interaction and feedback",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Main journeys provide clear navigation or commands, useful status, and actionable errors",
+          "github_evidence": [
+            "UI components",
+            "command help",
+            "validation messages",
+            "loading, empty, and error states",
+            "journey tests"
+          ]
+        },
+        {
+          "id": "C2.3",
+          "name": "Accessibility and inclusion",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Supports relevant keyboard, semantic, visual, language, and assistive interaction needs",
+          "github_evidence": [
+            "Semantic markup",
+            "labels and focus handling",
+            "accessible components",
+            "accessibility test reports",
+            "manual test notes"
+          ]
+        },
+        {
+          "id": "C2.4",
+          "name": "Recovery and user control",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Users can understand consequential actions, correct mistakes, and recover from relevant failures",
+          "github_evidence": [
+            "Confirmation and undo flows",
+            "preserved input",
+            "cancellation",
+            "AI citations or uncertainty where relevant",
+            "recovery tests"
+          ]
+        }
+      ],
+      "domain_level_examples": "Level 2 example: a usable happy path exists but errors discard input or lack recovery. Level 4 requires evidence from representative usability or accessibility checks and resulting improvements. Attractive screenshots alone do not establish usability; automated accessibility scans alone do not establish conformance."
+    },
+    {
+      "id": "C3",
+      "name": "Product Management",
+      "pool": "core",
+      "weight": 15,
+      "weight_basis": "overall_percent",
+      "criteria": [
+        {
+          "id": "C3.1",
+          "name": "Problem and value",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Clearly defines the user problem, intended outcome, and meaningful constraints",
+          "github_evidence": [
+            "README problem statement",
+            "product brief",
+            "issue descriptions",
+            "documented user feedback"
+          ]
+        },
+        {
+          "id": "C3.2",
+          "name": "Prioritization and scope",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Scope addresses the main user outcome and handles dependencies and exclusions coherently",
+          "github_evidence": [
+            "Milestones",
+            "roadmap",
+            "issue priorities with rationale",
+            "deliberately deferred features",
+            "coherent release contents"
+          ]
+        },
+        {
+          "id": "C3.3",
+          "name": "Acceptance and success measures",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Important features have testable acceptance criteria and appropriate outcome measures",
+          "github_evidence": [
+            "Issue checklists",
+            "behavior specifications",
+            "acceptance tests",
+            "event schemas",
+            "metric definitions"
+          ]
+        },
+        {
+          "id": "C3.4",
+          "name": "Feedback and iteration",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Changes respond to credible feedback or measured behavior and document the resulting decision",
+          "github_evidence": [
+            "Linked issues and PRs",
+            "release notes",
+            "experiment results",
+            "defect follow-up",
+            "changes tied to feedback"
+          ]
+        }
+      ],
+      "domain_level_examples": "Level 2 example: the product purpose and feature scope are clear, but success measures and feedback are missing. Level 4 requires a traceable feedback-to-decision-to-change cycle with an assessed outcome. Instrumentation code establishes measurement capability, not actual customer value or adoption."
+    },
+    {
+      "id": "C4",
+      "name": "AI Collaboration and Verification",
+      "pool": "core",
+      "weight": 15,
+      "weight_basis": "overall_percent",
+      "criteria": [
+        {
+          "id": "C4.1",
+          "name": "Task decomposition and context",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "AI-assisted tasks have usable goals, constraints, interfaces, and completion checks",
+          "github_evidence": [
+            "Attributable task briefs",
+            "agent instructions",
+            "linked issue specifications",
+            "redacted session artifacts"
+          ]
+        },
+        {
+          "id": "C4.2",
+          "name": "Review and technical ownership",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Contributor can explain material decisions and identifies or corrects unsuitable AI output",
+          "github_evidence": [
+            "Substantive PR review",
+            "corrective diffs with rationale",
+            "work-sample explanation and modification"
+          ]
+        },
+        {
+          "id": "C4.3",
+          "name": "Independent verification",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Uses checks that can expose mistakes rather than accepting the AI's own claim of correctness",
+          "github_evidence": [
+            "Independently specified acceptance tests",
+            "regression cases",
+            "reproducible commands and outputs",
+            "code-to-requirement trace"
+          ]
+        },
+        {
+          "id": "C4.4",
+          "name": "Safe and efficient delegation",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Delegates with appropriate permissions, data boundaries, checkpoints, and resource limits",
+          "github_evidence": [
+            "Tool permission configuration",
+            "approval rules",
+            "scoped workflows",
+            "documented budget limits",
+            "attributable execution traces"
+          ]
+        }
+      ],
+      "domain_level_examples": "Level 2 example: AI tasks and resulting code are documented with basic checks, but correction and ownership are not demonstrated. Level 4 requires an attributable cycle in which the contributor finds a consequential AI error, revises the approach, and validates the correction while explaining tradeoffs. A repository-only review often leaves C4 partially unknown. Do not assume AI was used because instructions or generated-looking code exist."
+    },
+    {
+      "id": "F1",
+      "name": "Software Development",
+      "pool": "functional",
+      "weight": 14,
+      "weight_basis": "functional_pool_percent",
+      "criteria": [
+        {
+          "id": "F1.1",
+          "name": "Correctness",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Implements required behavior and important boundary conditions",
+          "github_evidence": [
+            "Source logic",
+            "acceptance tests",
+            "bug fixes",
+            "reproducible examples"
+          ]
+        },
+        {
+          "id": "F1.2",
+          "name": "Maintainability",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Responsibilities, naming, and abstractions make likely changes understandable",
+          "github_evidence": [
+            "Module structure",
+            "refactoring diffs",
+            "interfaces",
+            "substantive code review"
+          ]
+        },
+        {
+          "id": "F1.3",
+          "name": "Error and resource handling",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Handles errors and manages connections, files, memory, and asynchronous work appropriately",
+          "github_evidence": [
+            "Error paths",
+            "cleanup",
+            "cancellation",
+            "concurrency controls",
+            "associated tests"
+          ]
+        },
+        {
+          "id": "F1.4",
+          "name": "Dependencies and contracts",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Dependencies and types or schemas are intentional, compatible, and reproducible",
+          "github_evidence": [
+            "Lockfiles",
+            "dependency manifests",
+            "type checks",
+            "runtime validators",
+            "compatibility CI"
+          ]
+        }
+      ],
+      "domain_level_examples": "Level 2: main behavior is implemented with limited boundary handling. Level 4: measured or observed maintenance problems are reduced through verified changes without unnecessary abstraction."
+    },
+    {
+      "id": "F2",
+      "name": "API and Integration Design",
+      "pool": "functional",
+      "weight": 7,
+      "weight_basis": "functional_pool_percent",
+      "criteria": [
+        {
+          "id": "F2.1",
+          "name": "Contract clarity",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Inputs, outputs, errors, and compatibility are explicit",
+          "github_evidence": [
+            "OpenAPI or equivalent",
+            "schemas",
+            "SDK types",
+            "contract tests"
+          ]
+        },
+        {
+          "id": "F2.2",
+          "name": "Access boundaries",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Authentication and object-level authorization protect relevant operations",
+          "github_evidence": [
+            "Middleware",
+            "policy checks",
+            "tenant filters",
+            "negative access tests"
+          ]
+        },
+        {
+          "id": "F2.3",
+          "name": "Resilience",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Relevant timeouts, rate limits, retries, and failure fallbacks are bounded",
+          "github_evidence": [
+            "Client configuration",
+            "backoff logic",
+            "retry limits",
+            "mocked outage tests"
+          ]
+        },
+        {
+          "id": "F2.4",
+          "name": "Consistency and evolution",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Handles pagination, duplicate requests, partial results, and changes where relevant",
+          "github_evidence": [
+            "Idempotency keys",
+            "webhook deduplication",
+            "pagination tests",
+            "version or compatibility strategy"
+          ]
+        }
+      ],
+      "domain_level_examples": "Level 2: a working integration covers normal responses. Level 4: representative outages, duplicate delivery, and compatibility changes are tested with observed results."
+    },
+    {
+      "id": "F3",
+      "name": "Database Design",
+      "pool": "functional",
+      "weight": 8,
+      "weight_basis": "functional_pool_percent",
+      "criteria": [
+        {
+          "id": "F3.1",
+          "name": "Schema and integrity",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Schema fits access patterns and protects required invariants",
+          "github_evidence": [
+            "DDL",
+            "ORM models",
+            "foreign keys",
+            "unique and check constraints",
+            "schema tests"
+          ]
+        },
+        {
+          "id": "F3.2",
+          "name": "Query design",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Important queries and indexes are appropriate to expected usage",
+          "github_evidence": [
+            "Query source",
+            "index migrations",
+            "explain plans",
+            "representative query tests"
+          ]
+        },
+        {
+          "id": "F3.3",
+          "name": "Transactions and concurrency",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Multi-step writes preserve relevant invariants under concurrent access",
+          "github_evidence": [
+            "Transactions",
+            "isolation choices",
+            "locking or optimistic concurrency",
+            "race tests"
+          ]
+        },
+        {
+          "id": "F3.4",
+          "name": "Lifecycle and recovery",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Schema changes, retention, and recovery match the project's needs",
+          "github_evidence": [
+            "Versioned migrations",
+            "upgrade tests",
+            "backup and restore procedures",
+            "deletion jobs"
+          ]
+        }
+      ],
+      "domain_level_examples": "Level 2: basic CRUD and schema exist, with incomplete integrity or migration handling. Level 4: realistic query, concurrency, migration, or recovery evidence validates key design choices."
+    },
+    {
+      "id": "F4",
+      "name": "Data Engineering",
+      "pool": "functional",
+      "weight": 6,
+      "weight_basis": "functional_pool_percent",
+      "criteria": [
+        {
+          "id": "F4.1",
+          "name": "Ingestion contracts",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Validates schemas and handles missing, malformed, and changing inputs",
+          "github_evidence": [
+            "Ingestion code",
+            "data contracts",
+            "validation fixtures",
+            "schema evolution tests"
+          ]
+        },
+        {
+          "id": "F4.2",
+          "name": "Repeatable processing",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Retries and reruns avoid corruption or unintended duplication",
+          "github_evidence": [
+            "Checkpoints",
+            "idempotent transforms",
+            "deduplication",
+            "backfill tests"
+          ]
+        },
+        {
+          "id": "F4.3",
+          "name": "Quality and lineage",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Records source provenance and checks relevant quality properties",
+          "github_evidence": [
+            "Dataset metadata",
+            "lineage manifests",
+            "freshness and completeness checks"
+          ]
+        },
+        {
+          "id": "F4.4",
+          "name": "Operations and scale",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Handles expected volume, scheduling, and failed records appropriately",
+          "github_evidence": [
+            "Pipeline definitions",
+            "partitioning",
+            "failure queues",
+            "resource settings",
+            "throughput results"
+          ]
+        }
+      ],
+      "domain_level_examples": "Level 2: a pipeline processes a clean example dataset. Level 4: repeatable results under late, duplicate, malformed, and representative-volume inputs validate the pipeline."
+    },
+    {
+      "id": "F5",
+      "name": "Data Analytics",
+      "pool": "functional",
+      "weight": 5,
+      "weight_basis": "functional_pool_percent",
+      "criteria": [
+        {
+          "id": "F5.1",
+          "name": "Metric semantics",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Defines grain, population, time windows, denominators, and exclusions",
+          "github_evidence": [
+            "Metric catalog",
+            "semantic models",
+            "SQL comments",
+            "worked examples"
+          ]
+        },
+        {
+          "id": "F5.2",
+          "name": "Analytical correctness",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Handles joins, nulls, time zones, aggregation, and filtering correctly",
+          "github_evidence": [
+            "SQL or analysis code",
+            "reconciliation checks",
+            "golden datasets"
+          ]
+        },
+        {
+          "id": "F5.3",
+          "name": "Communication",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Visualizations and explanations accurately answer the intended question",
+          "github_evidence": [
+            "Dashboard definitions",
+            "chart source",
+            "labels and units",
+            "interpretation notes"
+          ]
+        },
+        {
+          "id": "F5.4",
+          "name": "Decision support",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Conclusions distinguish observations, uncertainty, and causal claims",
+          "github_evidence": [
+            "Analysis writeups",
+            "sensitivity checks",
+            "linked decisions",
+            "alternative explanations"
+          ]
+        }
+      ],
+      "domain_level_examples": "Level 2: useful queries and charts exist but definitions or reconciliation are incomplete. Level 4: validated metrics and sensitivity analysis support a traceable decision."
+    },
+    {
+      "id": "F6",
+      "name": "Data Science",
+      "pool": "functional",
+      "weight": 5,
+      "weight_basis": "functional_pool_percent",
+      "criteria": [
+        {
+          "id": "F6.1",
+          "name": "Problem and baseline",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Uses an appropriate objective, metric, and meaningful baseline",
+          "github_evidence": [
+            "Experiment plan",
+            "baseline implementation",
+            "task rationale"
+          ]
+        },
+        {
+          "id": "F6.2",
+          "name": "Experimental validity",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Splits and preprocessing prevent relevant leakage and support the use case",
+          "github_evidence": [
+            "Split code",
+            "time or group validation",
+            "preprocessing pipelines",
+            "leakage tests"
+          ]
+        },
+        {
+          "id": "F6.3",
+          "name": "Reproducibility",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Data versions, environment, configuration, and experiments can be reconstructed",
+          "github_evidence": [
+            "Dataset manifests",
+            "environment locks",
+            "seeds where useful",
+            "experiment records"
+          ]
+        },
+        {
+          "id": "F6.4",
+          "name": "Error and uncertainty analysis",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Analyzes important error slices, uncertainty, and generalization limits",
+          "github_evidence": [
+            "Holdout results",
+            "calibration checks",
+            "slice reports",
+            "model cards",
+            "drift checks where applicable"
+          ]
+        }
+      ],
+      "domain_level_examples": "Level 2: a model trains and reports an appropriate metric on a basic split. Level 4: comparisons, error analysis, and valid uncertainty estimates substantiate improvements beyond the baseline."
+    },
+    {
+      "id": "F7",
+      "name": "AI Implementation",
+      "pool": "functional",
+      "weight": 12,
+      "weight_basis": "functional_pool_percent",
+      "criteria": [
+        {
+          "id": "F7.1",
+          "name": "Model and task fit",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Model and prompting choices fit requirements with a simpler baseline considered",
+          "github_evidence": [
+            "Model configuration",
+            "prompt versions",
+            "comparison results",
+            "decision rationale"
+          ]
+        },
+        {
+          "id": "F7.2",
+          "name": "Output and tool contracts",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Validates structured output and constrains tools before consequential use",
+          "github_evidence": [
+            "JSON schemas",
+            "validators",
+            "tool allowlists",
+            "argument checks",
+            "malformed-output tests"
+          ]
+        },
+        {
+          "id": "F7.3",
+          "name": "Behavioral evaluation",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Uses representative normal, edge, and adversarial cases with explicit grading",
+          "github_evidence": [
+            "Eval datasets",
+            "graders",
+            "expected outcomes",
+            "regression results",
+            "held-out cases"
+          ]
+        },
+        {
+          "id": "F7.4",
+          "name": "Runtime control",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Controls latency, spending, failures, and sensitive logging",
+          "github_evidence": [
+            "Token or spend limits",
+            "bounded retries",
+            "fallback paths",
+            "redaction",
+            "telemetry tests"
+          ]
+        }
+      ],
+      "domain_level_examples": "Level 2: the model powers the main experience with basic error handling. Level 4: representative held-out evaluation and cost or latency results justify choices and show improvement. API integration alone does not establish AI quality."
+    },
+    {
+      "id": "F8",
+      "name": "RAG and Knowledge Base Design",
+      "pool": "functional",
+      "weight": 8,
+      "weight_basis": "functional_pool_percent",
+      "criteria": [
+        {
+          "id": "F8.1",
+          "name": "Ingestion and freshness",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Preserves provenance and supports appropriate updates and deletions",
+          "github_evidence": [
+            "Parsers",
+            "chunking",
+            "document IDs",
+            "version metadata",
+            "reindex and deletion tests"
+          ]
+        },
+        {
+          "id": "F8.2",
+          "name": "Retrieval quality",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Evaluates retrieval against relevant questions and reference evidence",
+          "github_evidence": [
+            "Query sets",
+            "relevance judgments",
+            "recall at k or ranking metrics",
+            "retrieval comparisons"
+          ]
+        },
+        {
+          "id": "F8.3",
+          "name": "Grounded answers",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Supports answers with correct citations and handles insufficient evidence",
+          "github_evidence": [
+            "Citation mapping",
+            "answer evaluation",
+            "abstention cases",
+            "unsupported-claim checks"
+          ]
+        },
+        {
+          "id": "F8.4",
+          "name": "Access and hostile content",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Enforces document permissions and treats retrieved instructions as untrusted",
+          "github_evidence": [
+            "Permission-aware retrieval",
+            "tenant tests",
+            "poisoning and prompt injection tests",
+            "deletion verification"
+          ]
+        }
+      ],
+      "domain_level_examples": "Level 2: documents can be indexed, retrieved, and cited in the main scenario. Level 4: separate retrieval and answer evaluations demonstrate improvements while maintaining permission and freshness controls."
+    },
+    {
+      "id": "F9",
+      "name": "Workflow Automation",
+      "pool": "functional",
+      "weight": 7,
+      "weight_basis": "functional_pool_percent",
+      "criteria": [
+        {
+          "id": "F9.1",
+          "name": "States and transitions",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Workflow states, triggers, dependencies, and completion criteria are explicit",
+          "github_evidence": [
+            "State machine",
+            "workflow definitions",
+            "transition tests",
+            "event schemas"
+          ]
+        },
+        {
+          "id": "F9.2",
+          "name": "Retry and duplication control",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Retries are bounded and duplicate events do not repeat consequential actions",
+          "github_evidence": [
+            "Idempotency storage",
+            "retry policy",
+            "deduplication",
+            "duplicate-event tests"
+          ]
+        },
+        {
+          "id": "F9.3",
+          "name": "Human control and audit",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Consequential actions have suitable authorization, review, and traceability",
+          "github_evidence": [
+            "Approval steps",
+            "policy checks",
+            "audit records",
+            "cancellation and override flows"
+          ]
+        },
+        {
+          "id": "F9.4",
+          "name": "Partial failure recovery",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Can resume, reconcile, or compensate after important failures",
+          "github_evidence": [
+            "Checkpoints",
+            "compensation handlers",
+            "replay tools",
+            "partial-failure tests"
+          ]
+        }
+      ],
+      "domain_level_examples": "Level 2: the normal sequence completes. Level 4: interruption, duplicate delivery, and partial failure exercises demonstrate safe recovery."
+    },
+    {
+      "id": "F10",
+      "name": "Automated Testing",
+      "pool": "functional",
+      "weight": 9,
+      "weight_basis": "functional_pool_percent",
+      "criteria": [
+        {
+          "id": "F10.1",
+          "name": "Risk-based coverage",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Tests cover important requirements at suitable unit, integration, and end-to-end levels",
+          "github_evidence": [
+            "Requirement-linked tests",
+            "critical journey specs",
+            "relevant edge cases"
+          ]
+        },
+        {
+          "id": "F10.2",
+          "name": "Assertion strength",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Assertions can expose meaningful defects and verify outcomes beyond mocks",
+          "github_evidence": [
+            "Behavioral assertions",
+            "regression cases",
+            "mutation or seeded-defect results where useful"
+          ]
+        },
+        {
+          "id": "F10.3",
+          "name": "Test realism",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Test doubles and fixtures preserve relevant contracts; important real boundaries are exercised",
+          "github_evidence": [
+            "Database integration tests",
+            "contract fixtures",
+            "realistic malformed input",
+            "boundary tests"
+          ]
+        },
+        {
+          "id": "F10.4",
+          "name": "Reliability and reproducibility",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Tests run deterministically enough for their purpose with clear setup and isolation",
+          "github_evidence": [
+            "CI execution",
+            "pinned test dependencies",
+            "isolated fixtures",
+            "flake fixes",
+            "reproducible commands"
+          ]
+        }
+      ],
+      "domain_level_examples": "Level 2: the main path is tested with useful assertions. Level 4: evidence shows the suite catches representative regressions and remains reliable. Coverage percentage or test count alone cannot establish this."
+    },
+    {
+      "id": "F11",
+      "name": "Automated Quality Assurance",
+      "pool": "functional",
+      "weight": 6,
+      "weight_basis": "functional_pool_percent",
+      "criteria": [
+        {
+          "id": "F11.1",
+          "name": "Repeatable release checks",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Required checks cover relevant quality risks and block or explicitly handle failure",
+          "github_evidence": [
+            "CI definitions",
+            "status checks",
+            "release scripts",
+            "quality thresholds"
+          ]
+        },
+        {
+          "id": "F11.2",
+          "name": "Breadth of quality checks",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Checks address applicable security, accessibility, performance, and AI risks",
+          "github_evidence": [
+            "Scanner configuration",
+            "accessibility runs",
+            "performance budgets",
+            "eval jobs"
+          ]
+        },
+        {
+          "id": "F11.3",
+          "name": "Defect lifecycle",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Defects have reproducible reports, severity, correction, and verification",
+          "github_evidence": [
+            "Issue templates",
+            "linked fixes",
+            "regression tests",
+            "triage and release notes"
+          ]
+        },
+        {
+          "id": "F11.4",
+          "name": "Traceable release evidence",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Results correspond to the evaluated revision and release artifact",
+          "github_evidence": [
+            "Workflow run SHA",
+            "artifact digest",
+            "release manifest",
+            "explicit overrides and rationale"
+          ]
+        }
+      ],
+      "domain_level_examples": "Level 2: CI runs basic checks. Level 4: release evidence and defect history demonstrate that the process detects escapes and improves. A workflow YAML does not prove a run passed or a branch protection rule is enabled; inspect run results and repository settings when accessible."
+    },
+    {
+      "id": "F12",
+      "name": "Security and Privacy",
+      "pool": "functional",
+      "weight": 8,
+      "weight_basis": "functional_pool_percent",
+      "criteria": [
+        {
+          "id": "F12.1",
+          "name": "Identity and authorization",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Relevant authentication and per-object or tenant access are enforced",
+          "github_evidence": [
+            "Policy code",
+            "endpoint checks",
+            "negative access tests",
+            "scoped service credentials"
+          ]
+        },
+        {
+          "id": "F12.2",
+          "name": "Input and execution boundaries",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Untrusted input cannot cross relevant query, rendering, execution, or AI tool boundaries unchecked",
+          "github_evidence": [
+            "Parameterized queries",
+            "sanitization",
+            "sandbox controls",
+            "injection tests"
+          ]
+        },
+        {
+          "id": "F12.3",
+          "name": "Secrets and dependencies",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Credentials are kept out of committed code and dependency risks are managed",
+          "github_evidence": [
+            "Secret scanning results",
+            "environment templates",
+            "dependency scans",
+            "update fixes",
+            "lockfiles"
+          ]
+        },
+        {
+          "id": "F12.4",
+          "name": "Data lifecycle",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Collection, storage, logs, retention, and deletion protect relevant sensitive data",
+          "github_evidence": [
+            "Redaction",
+            "retention settings",
+            "deletion tests",
+            "encryption configuration",
+            "threat model"
+          ]
+        }
+      ],
+      "domain_level_examples": "Level 2: basic controls exist with incomplete negative testing or lifecycle handling. Level 4: a proportionate threat model and targeted tests validate important defenses. Do not copy exposed credentials into a report; redact and reference the location."
+    },
+    {
+      "id": "F13",
+      "name": "Deployment and Operations",
+      "pool": "functional",
+      "weight": 5,
+      "weight_basis": "functional_pool_percent",
+      "criteria": [
+        {
+          "id": "F13.1",
+          "name": "Reproducible setup",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "A clean environment can run the intended deliverable with documented configuration",
+          "github_evidence": [
+            "README commands",
+            "container or environment files",
+            "dependency locks",
+            "setup smoke test"
+          ]
+        },
+        {
+          "id": "F13.2",
+          "name": "Delivery and rollback",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Release and recovery are appropriate to the deployment model",
+          "github_evidence": [
+            "CI/CD",
+            "infrastructure definitions",
+            "staged release procedure",
+            "rollback or reinstall checks"
+          ]
+        },
+        {
+          "id": "F13.3",
+          "name": "Observability",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Relevant health, errors, latency, and costs can be diagnosed without leaking data",
+          "github_evidence": [
+            "Structured logs",
+            "metrics",
+            "trace IDs",
+            "health checks",
+            "alert configuration"
+          ]
+        },
+        {
+          "id": "F13.4",
+          "name": "Recovery and capacity",
+          "domain_weight_percent": 25,
+          "level_3_requirement": "Important outages and expected workload are addressed proportionately",
+          "github_evidence": [
+            "Runbooks",
+            "restore or restart tests",
+            "load results",
+            "capacity and spend limits"
+          ]
+        }
+      ],
+      "domain_level_examples": "Level 2: the author can run and deploy the application with some manual setup. Level 4: clean setup and representative recovery or workload exercises substantiate operating assumptions."
+    }
+  ]
+}

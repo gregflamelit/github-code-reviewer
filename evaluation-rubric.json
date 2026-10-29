@@ -1,8 +1,9 @@
 {
-  "rubric_version": "1.0",
+  "rubric_version": "2.0",
   "status": "proposed_defaults_pending_calibration",
-  "specification": "evaluation-rubric.md",
-  "pool_weights_percent": {
+  "specification": "docs/scoring-rubrics.md",
+  "weight_authority": "scoring-rubrics.json defines current role weights; shared domain weight fields retain the historical baseline for compatibility",
+  "legacy_pool_weights_percent": {
     "core": 60,
     "functional": 40
   },
@@ -1060,6 +1061,547 @@
         }
       ],
       "domain_level_examples": "Level 2: the author can run and deploy the application with some manual setup. Level 4: clean setup and representative recovery or workload exercises substantiate operating assumptions."
+    },
+    {
+      "id": "R1",
+      "name": "Product Outcomes Discovery and Adoption",
+      "pool": "role",
+      "role_id": "ai_product_manager",
+      "weight": 30,
+      "weight_basis": "overall_percent_for_own_role",
+      "criteria": [
+        {
+          "id": "R1.1",
+          "name": "Outcome definitions",
+          "domain_weight_percent": 10,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Connects user problems to explicit outcome metrics with a population, baseline, target, and decision rule.",
+          "level_4_requirement": "Outcome-linked changes are followed by measured results with relevant confounders disclosed.",
+          "github_evidence": [
+            "Metric definitions",
+            "product briefs",
+            "analytics event contracts",
+            "baseline reports"
+          ]
+        },
+        {
+          "id": "R1.2",
+          "name": "Outcome validation",
+          "domain_weight_percent": 10,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Separates shipped features from demonstrated user or business outcomes and checks whether changes met their stated goal.",
+          "level_4_requirement": "Repeated iterations show validated improvements and documented decisions when a hypothesis fails.",
+          "github_evidence": [
+            "Experiment reports",
+            "feedback-linked PRs",
+            "before-and-after analyses",
+            "acceptance results"
+          ]
+        },
+        {
+          "id": "R1.3",
+          "name": "Unit economics",
+          "domain_weight_percent": 10,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Models relevant inference, infrastructure, support, and human-review costs against expected usage and value.",
+          "level_4_requirement": "Representative usage validates sensitivity to volume, failure, and model choice with measured tradeoffs.",
+          "github_evidence": [
+            "Cost models",
+            "token budgets",
+            "operating-cost benchmarks",
+            "pricing assumptions"
+          ]
+        },
+        {
+          "id": "R1.4",
+          "name": "Value and prioritization",
+          "domain_weight_percent": 10,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Prioritizes alternatives using user value, effort, risk, dependencies, and explicit scope boundaries.",
+          "level_4_requirement": "Observed results inform subsequent prioritization and demonstrate adjustment of an unsuccessful choice.",
+          "github_evidence": [
+            "Prioritized issues",
+            "roadmap rationale",
+            "scope exclusions",
+            "release decisions"
+          ]
+        },
+        {
+          "id": "R1.5",
+          "name": "Research design",
+          "domain_weight_percent": 10,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Uses a research question, appropriate participant or user context, and a repeatable protocol instead of unsupported personas.",
+          "level_4_requirement": "Research triangulates independent sources and documents limitations and changes caused by findings.",
+          "github_evidence": [
+            "Research plans",
+            "interview guides",
+            "anonymized findings",
+            "participant context"
+          ]
+        },
+        {
+          "id": "R1.6",
+          "name": "Experiment validity",
+          "domain_weight_percent": 10,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Defines a hypothesis, success and guardrail metrics, comparison method, and stopping or decision rules appropriate to the project.",
+          "level_4_requirement": "Experiment results support a justified decision and address material bias or uncertainty.",
+          "github_evidence": [
+            "Experiment plans",
+            "split assignment code",
+            "guardrail definitions",
+            "decision records"
+          ]
+        },
+        {
+          "id": "R1.7",
+          "name": "Alternatives and usability",
+          "domain_weight_percent": 10,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Compares relevant solution alternatives and validates critical journeys for the intended users, including failure recovery.",
+          "level_4_requirement": "Representative user evidence demonstrates improvement over an alternative with remaining limitations recorded.",
+          "github_evidence": [
+            "Prototype comparisons",
+            "usability tasks",
+            "accessibility notes",
+            "tested design iterations"
+          ]
+        },
+        {
+          "id": "R1.8",
+          "name": "Feedback traceability",
+          "domain_weight_percent": 10,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Traces credible feedback through a product decision, acceptance criteria, implementation, and verification.",
+          "level_4_requirement": "A complete feedback-to-outcome cycle shows what improved and what did not.",
+          "github_evidence": [
+            "Linked issues and PRs",
+            "acceptance tests",
+            "release notes",
+            "feedback summaries"
+          ]
+        },
+        {
+          "id": "R1.9",
+          "name": "Adoption and onboarding",
+          "domain_weight_percent": 5,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Defines and supports activation steps, required setup, user understanding, and relevant adoption measures.",
+          "level_4_requirement": "Representative onboarding evidence validates a reduction in friction or successful activation.",
+          "github_evidence": [
+            "Onboarding flows",
+            "activation metric definitions",
+            "setup tests",
+            "abandonment fixes"
+          ]
+        },
+        {
+          "id": "R1.10",
+          "name": "Workflow and change management",
+          "domain_weight_percent": 5,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Fits the product into real task sequences with appropriate human handoffs, role responsibilities, and rollout plans.",
+          "level_4_requirement": "Observed workflow use validates handoffs and documents correction of adoption or coordination failures.",
+          "github_evidence": [
+            "User journeys",
+            "integration plans",
+            "handoff contracts",
+            "rollout documentation"
+          ]
+        },
+        {
+          "id": "R1.11",
+          "name": "Support and recovery",
+          "domain_weight_percent": 5,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Provides actionable support guidance, escalation, recovery, and feedback paths for important user failures.",
+          "level_4_requirement": "Support or failure evidence validates faster recovery and feeds improvements back into the product.",
+          "github_evidence": [
+            "Help content",
+            "support runbooks",
+            "issue templates",
+            "recovery flows",
+            "incident follow-up"
+          ]
+        },
+        {
+          "id": "R1.12",
+          "name": "Responsible product decisions",
+          "domain_weight_percent": 5,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Makes consequential AI behavior understandable and provides proportionate user control, privacy boundaries, and escalation.",
+          "level_4_requirement": "User or adversarial evaluations validate the controls and document unresolved tradeoffs.",
+          "github_evidence": [
+            "AI disclosure and uncertainty UI",
+            "consent or retention design",
+            "override flows",
+            "risk decisions"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R2",
+      "name": "Engineering Reliability and Change Safety",
+      "pool": "role",
+      "role_id": "ai_engineering",
+      "weight": 30,
+      "weight_basis": "overall_percent_for_own_role",
+      "criteria": [
+        {
+          "id": "R2.1",
+          "name": "Concurrency invariants",
+          "domain_weight_percent": 10,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Identifies shared-state invariants and enforces them under concurrent operations where concurrency is relevant.",
+          "level_4_requirement": "Representative concurrent execution validates invariants and exposes regression cases.",
+          "github_evidence": [
+            "Transaction and locking code",
+            "optimistic concurrency",
+            "race tests",
+            "invariant specifications"
+          ]
+        },
+        {
+          "id": "R2.2",
+          "name": "Idempotency and duplicate delivery",
+          "domain_weight_percent": 10,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Prevents repeated consequential effects during retries or duplicate events using durable appropriate deduplication.",
+          "level_4_requirement": "Duplicate and interrupted-delivery exercises validate durable behavior across restarts.",
+          "github_evidence": [
+            "Idempotency keys",
+            "unique constraints",
+            "replay tests",
+            "webhook consumers"
+          ]
+        },
+        {
+          "id": "R2.3",
+          "name": "Ordering and consistency",
+          "domain_weight_percent": 10,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Defines relevant ordering, stale-read, conflict, and consistency behavior across components or writes.",
+          "level_4_requirement": "Out-of-order and conflicting operations are tested and support the documented consistency choice.",
+          "github_evidence": [
+            "Ordering contracts",
+            "version checks",
+            "consistency ADRs",
+            "conflict tests"
+          ]
+        },
+        {
+          "id": "R2.4",
+          "name": "Partial failure and compensation",
+          "domain_weight_percent": 10,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Handles important partial successes through reconciliation, compensation, checkpointing, or safely repeatable recovery.",
+          "level_4_requirement": "Fault injection or recorded incidents validate recovery without corrupting state or duplicating actions.",
+          "github_evidence": [
+            "Compensation handlers",
+            "checkpoints",
+            "dead-letter handling",
+            "reconciliation tests"
+          ]
+        },
+        {
+          "id": "R2.5",
+          "name": "Reliability objectives",
+          "domain_weight_percent": 10,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Defines proportionate availability, latency, correctness, or recovery objectives tied to user-impacting workflows.",
+          "level_4_requirement": "Representative operational or exercise results demonstrate objectives and justify tradeoffs.",
+          "github_evidence": [
+            "Service objectives",
+            "performance budgets",
+            "health checks",
+            "recovery targets"
+          ]
+        },
+        {
+          "id": "R2.6",
+          "name": "Representative load testing",
+          "domain_weight_percent": 10,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Uses realistic workloads, data volumes, concurrency, and acceptance thresholds for important performance assumptions.",
+          "level_4_requirement": "Repeated measurements identify bottlenecks and validate a documented improvement.",
+          "github_evidence": [
+            "Load scripts",
+            "workload models",
+            "benchmark environments",
+            "threshold checks"
+          ]
+        },
+        {
+          "id": "R2.7",
+          "name": "Observability and diagnosis",
+          "domain_weight_percent": 10,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Provides actionable structured logs, correlation, relevant metrics, and failure signals without exposing sensitive data.",
+          "level_4_requirement": "A representative failure is detected and diagnosed using those signals with demonstrated remediation.",
+          "github_evidence": [
+            "Trace propagation",
+            "log redaction",
+            "metric definitions",
+            "alert rules",
+            "diagnostic tests"
+          ]
+        },
+        {
+          "id": "R2.8",
+          "name": "Recovery and rollback verification",
+          "domain_weight_percent": 10,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Defines and verifies proportionate restore, restart, migration recovery, or rollback procedures.",
+          "level_4_requirement": "Exercises or incidents demonstrate recovery within stated objectives and update procedures.",
+          "github_evidence": [
+            "Runbooks",
+            "restore drills",
+            "rollback tests",
+            "restart checks",
+            "migration recovery"
+          ]
+        },
+        {
+          "id": "R2.9",
+          "name": "Dependency provenance",
+          "domain_weight_percent": 5,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Controls relevant dependency sources, versions, integrity, and vulnerability response.",
+          "level_4_requirement": "Traceable remediation and verification demonstrate that a real dependency risk was resolved.",
+          "github_evidence": [
+            "Lockfiles",
+            "integrity checks",
+            "dependency scans",
+            "update PRs",
+            "provenance records"
+          ]
+        },
+        {
+          "id": "R2.10",
+          "name": "Reproducible artifacts",
+          "domain_weight_percent": 5,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Can reconstruct the delivered artifact from a specified revision and controlled build inputs.",
+          "level_4_requirement": "Independent clean builds or equivalent reproducibility checks substantiate the artifact provenance.",
+          "github_evidence": [
+            "Build locks",
+            "artifact digests",
+            "version manifests",
+            "reproducible build checks"
+          ]
+        },
+        {
+          "id": "R2.11",
+          "name": "Migration and compatibility safety",
+          "domain_weight_percent": 5,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Protects relevant stored data and consumers during schema, API, dependency, or configuration changes.",
+          "level_4_requirement": "Representative upgrade and rollback or forward-recovery tests validate compatibility and data integrity.",
+          "github_evidence": [
+            "Expand-contract migrations",
+            "upgrade fixtures",
+            "API contract tests",
+            "deprecation plans"
+          ]
+        },
+        {
+          "id": "R2.12",
+          "name": "Release enforcement",
+          "domain_weight_percent": 5,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Connects required quality checks to the released revision, handles overrides explicitly, and supports safe rollout.",
+          "level_4_requirement": "Release or failure evidence demonstrates enforcement, traceability, and a verified correction.",
+          "github_evidence": [
+            "CI results at SHA",
+            "required-check settings",
+            "release manifests",
+            "staged rollout rules"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R3",
+      "name": "Statistical Validity and Scientific Reliability",
+      "pool": "role",
+      "role_id": "ai_data_science",
+      "weight": 30,
+      "weight_basis": "overall_percent_for_own_role",
+      "criteria": [
+        {
+          "id": "R3.1",
+          "name": "Statistical question and estimand",
+          "domain_weight_percent": 10,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Defines the scientific question, target population, unit of analysis, and quantity being estimated or predicted.",
+          "level_4_requirement": "Independent checks show the analysis answers the stated question with clearly bounded interpretation.",
+          "github_evidence": [
+            "Study plans",
+            "dataset documentation",
+            "analysis specifications",
+            "outcome definitions"
+          ]
+        },
+        {
+          "id": "R3.2",
+          "name": "Sampling and power",
+          "domain_weight_percent": 10,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Justifies sampling or sample size and addresses relevant selection bias, representativeness, and power limits.",
+          "level_4_requirement": "Sensitivity or replication evidence demonstrates which conclusions remain stable under sampling limits.",
+          "github_evidence": [
+            "Sampling code",
+            "sample-size calculations",
+            "cohort definitions",
+            "power or sensitivity analyses"
+          ]
+        },
+        {
+          "id": "R3.3",
+          "name": "Uncertainty and effect size",
+          "domain_weight_percent": 10,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Reports appropriate effect sizes and uncertainty estimates with assumptions and meaningful practical interpretation.",
+          "level_4_requirement": "Coverage, simulation, replication, or sensitivity analysis validates uncertainty estimates and practical significance.",
+          "github_evidence": [
+            "Confidence or credible intervals",
+            "bootstrap code",
+            "effect-size reports",
+            "uncertainty checks"
+          ]
+        },
+        {
+          "id": "R3.4",
+          "name": "Multiple testing and causal validity",
+          "domain_weight_percent": 10,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Addresses relevant repeated testing and separates association from causal conclusions using defensible identification assumptions.",
+          "level_4_requirement": "Robustness checks or valid experiments support conclusions and explicitly address alternative explanations.",
+          "github_evidence": [
+            "Multiplicity corrections",
+            "preregistered plans",
+            "experiment assignment",
+            "causal assumptions",
+            "negative controls"
+          ]
+        },
+        {
+          "id": "R3.5",
+          "name": "Temporal and group leakage",
+          "domain_weight_percent": 10,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Uses splits and validation matching deployment, preserving relevant temporal, person, entity, and group boundaries.",
+          "level_4_requirement": "Adversarial overlap and temporal checks validate boundaries and demonstrate realistic generalization.",
+          "github_evidence": [
+            "Time or grouped split code",
+            "overlap assertions",
+            "train-test manifests",
+            "leakage regression cases"
+          ]
+        },
+        {
+          "id": "R3.6",
+          "name": "Preprocessing and holdout isolation",
+          "domain_weight_percent": 10,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Fits transformations and selection on training data only and preserves independent held-out evaluation.",
+          "level_4_requirement": "Independent reproduction or leakage tests verify selection and preprocessing never contaminate evaluation.",
+          "github_evidence": [
+            "Train-only pipeline fitting",
+            "nested validation",
+            "holdout access controls",
+            "split-specific fixtures"
+          ]
+        },
+        {
+          "id": "R3.7",
+          "name": "Dataset and benchmark contamination",
+          "domain_weight_percent": 10,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Tracks provenance and checks relevant duplicate, source, label, or benchmark overlap that could inflate measured performance.",
+          "level_4_requirement": "Contamination controls are validated and results are reassessed on a demonstrably independent set.",
+          "github_evidence": [
+            "Dataset hashes",
+            "deduplication",
+            "overlap reports",
+            "benchmark provenance",
+            "contamination checks"
+          ]
+        },
+        {
+          "id": "R3.8",
+          "name": "Label missingness and slice quality",
+          "domain_weight_percent": 10,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Examines label reliability, missing-data handling, and errors across scientifically or operationally relevant slices.",
+          "level_4_requirement": "Sensitivity to labels, missingness, and important slices is quantified and informs a verified correction.",
+          "github_evidence": [
+            "Annotation agreement",
+            "missingness analyses",
+            "imputation pipelines",
+            "slice evaluation reports"
+          ]
+        },
+        {
+          "id": "R3.9",
+          "name": "Calibration and decision thresholds",
+          "domain_weight_percent": 5,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Where predictions drive decisions, validates calibration and chooses thresholds using relevant costs and error tradeoffs.",
+          "level_4_requirement": "Held-out or prospective evidence validates calibration and threshold usefulness under stated conditions.",
+          "github_evidence": [
+            "Reliability diagrams",
+            "proper scoring rules",
+            "threshold analyses",
+            "decision-cost definitions"
+          ]
+        },
+        {
+          "id": "R3.10",
+          "name": "Drift and model monitoring",
+          "domain_weight_percent": 5,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Where deployed or repeatedly applied, monitors meaningful data or concept changes and defines response criteria.",
+          "level_4_requirement": "Simulated or observed shifts trigger the intended response and validate monitored signals.",
+          "github_evidence": [
+            "Drift metrics",
+            "baseline distributions",
+            "monitoring tests",
+            "retraining and escalation rules"
+          ]
+        },
+        {
+          "id": "R3.11",
+          "name": "Scientific reproducibility",
+          "domain_weight_percent": 5,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Reconstructs data versions, environment, preprocessing, experiment configuration, and reported results.",
+          "level_4_requirement": "An independent clean rerun reproduces material conclusions within documented tolerances.",
+          "github_evidence": [
+            "Dataset manifests",
+            "environment locks",
+            "experiment configs",
+            "reproducible notebooks or scripts"
+          ]
+        },
+        {
+          "id": "R3.12",
+          "name": "Baselines and decision usefulness",
+          "domain_weight_percent": 5,
+          "level_2_requirement": "The main approach is documented or implemented, but material validation, assumptions, or relevant edge cases remain incomplete.",
+          "level_3_requirement": "Compares suitable simple baselines and explains how model or analytical improvements affect a real decision.",
+          "level_4_requirement": "Held-out improvements and their decision impact are validated with limitations and unsuccessful alternatives disclosed.",
+          "github_evidence": [
+            "Baseline code",
+            "ablations",
+            "effect and cost comparisons",
+            "decision records",
+            "limitation reports"
+          ]
+        }
+      ]
     }
   ]
 }

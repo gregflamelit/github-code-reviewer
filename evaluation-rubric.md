@@ -1,6 +1,8 @@
 # GitHub AI Enhanced Worker Evaluation Rubric
 
-Version 1.0. Initial weights and thresholds are product defaults to calibrate against expert reviews; they are not validated predictors of job performance.
+Shared criterion policy and historical baseline: criteria 1.0. The current app uses criteria 2.0 and scoring 2.0. See [the current scoring specification](docs/scoring-rubrics.md) for the 36 additional specialist criteria, updated weights, weighted coverage, and versioning rules. The historical domain weights and equally weighted criterion examples below describe the original 68 criteria.
+
+Initial weights and thresholds are product defaults to calibrate against expert reviews; they are not validated predictors of job performance.
 
 This rubric evaluates how well work demonstrates the ability to turn a user problem into a useful, reliable solution with AI assistance. Reports distinguish repository quality, attributable contributor evidence, and capabilities requiring a work sample. The primary output is a capability profile with evidence and uncertainty.
 

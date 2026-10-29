@@ -1,19 +1,19 @@
 {
-  "rubric_version": "1.1",
-  "assessment_criteria_version": "1.0",
+  "rubric_version": "2.0",
+  "assessment_criteria_version": "2.0",
   "status": "proposed_defaults_pending_calibration",
   "rubrics": [
     {
       "id": "ai_product_manager",
       "name": "AI Product Manager",
-      "description": "Original balanced rubric emphasizing architecture, human centered design, product management, and responsible AI collaboration.",
+      "description": "Original balanced rubric emphasizing architecture, human centered design, product management, and responsible AI collaboration. Includes a required 30% specialist evidence assessment.",
       "core_weights_percent": {
-        "C1": 15,
-        "C2": 15,
-        "C3": 15,
-        "C4": 15
+        "C1": 10.5,
+        "C2": 10.5,
+        "C3": 10.5,
+        "C4": 10.5
       },
-      "functional_pool_percent": 40,
+      "functional_pool_percent": 28,
       "functional_weights_percent": {
         "F1": 14,
         "F2": 7,
@@ -32,20 +32,23 @@
       "critical_domains": [
         "F1",
         "F10",
-        "F12"
-      ]
+        "F12",
+        "R1"
+      ],
+      "role_domain": "R1",
+      "role_pool_percent": 30
     },
     {
       "id": "ai_engineering",
       "name": "AI Engineering Rubric",
-      "description": "Emphasizes architecture, implementation correctness, integration, security, testing, and operational reliability.",
+      "description": "Emphasizes architecture, implementation correctness, integration, security, testing, and operational reliability. Includes a required 30% specialist evidence assessment.",
       "core_weights_percent": {
-        "C1": 20,
-        "C2": 5,
-        "C3": 5,
-        "C4": 10
+        "C1": 14,
+        "C2": 3.5,
+        "C3": 3.5,
+        "C4": 7
       },
-      "functional_pool_percent": 60,
+      "functional_pool_percent": 42,
       "functional_weights_percent": {
         "F1": 20,
         "F2": 10,
@@ -65,20 +68,23 @@
         "F1",
         "F10",
         "F12",
-        "F13"
-      ]
+        "F13",
+        "R2"
+      ],
+      "role_domain": "R2",
+      "role_pool_percent": 30
     },
     {
       "id": "ai_data_science",
       "name": "AI Data Science Rubric",
-      "description": "Emphasizes statistical validity, analytical correctness, data pipelines, and defensible AI experiments.",
+      "description": "Emphasizes statistical validity, analytical correctness, data pipelines, and defensible AI experiments. Includes a required 30% specialist evidence assessment.",
       "core_weights_percent": {
-        "C1": 10,
-        "C2": 5,
-        "C3": 10,
-        "C4": 10
+        "C1": 7,
+        "C2": 3.5,
+        "C3": 7,
+        "C4": 7
       },
-      "functional_pool_percent": 65,
+      "functional_pool_percent": 45.5,
       "functional_weights_percent": {
         "F1": 8,
         "F2": 2,
@@ -97,8 +103,11 @@
       "critical_domains": [
         "F4",
         "F5",
-        "F6"
-      ]
+        "F6",
+        "R3"
+      ],
+      "role_domain": "R3",
+      "role_pool_percent": 30
     }
   ]
 }

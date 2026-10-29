@@ -8,7 +8,7 @@
     <div class="workspace-label">YOUR WORKSPACE</div>
     <button id="new-review" class="nav active">＋ &nbsp; New evaluation</button>
     <div class="history-title">RECENT EVALUATIONS</div><nav id="history" aria-label="Review history"><p class="muted">No evaluations yet</p></nav>
-    <div class="sidebar-bottom"><span class="local-dot"></span> Local workspace <span class="version">v0.1</span><p>Your reports stay on this computer.</p><a href="https://github.com/gregflamelit/github-code-reviewer" target="_blank" rel="noreferrer">View project ↗</a></div>
+    <div class="sidebar-bottom"><span class="local-dot"></span> Local workspace <span class="version">v0.2</span><p>Your reports stay on this computer.</p><a href="https://github.com/gregflamelit/github-code-reviewer" target="_blank" rel="noreferrer">View project ↗</a></div>
   </aside>
   <main id="main">
     <header><div class="breadcrumb">Workspace <span>/</span> Repository evaluation</div><span id="connection" class="connection">Checking Codex…</span></header>
@@ -24,11 +24,11 @@
         <p class="privacy">Runs through your local Codex sign-in. Selected public source content is sent to OpenAI for inference. Repository code is not executed.</p>
         <p id="form-error" class="error" role="alert" hidden></p>
       </form>
-      <div class="feature-grid"><article><span class="feature-number">01</span><h3>Evaluate with structure</h3><p>68 criteria across four core capabilities and 13 functional skills.</p></article><article><span class="feature-number">02</span><h3>Follow the evidence</h3><p>Scores connect to exact excerpts at an immutable GitHub revision.</p></article><article><span class="feature-number">03</span><h3>Know what is unknown</h3><p>Evidence coverage is reported separately from implementation quality.</p></article></div>
-      <section class="rubric-overview"><div><div class="eyebrow">THE EVALUATION FRAMEWORK</div><h2>Four capabilities at the core.</h2></div><div class="core-grid"><div><b>15%</b><span>Solutions<br>Architecture</span></div><div><b>15%</b><span>Human Centered<br>Design</span></div><div><b>15%</b><span>Product<br>Management</span></div><div><b>15%</b><span>AI Collaboration<br>& Verification</span></div></div><p class="muted">Core capabilities contribute 60%. Applicable functional skills contribute 40%. Weights are initial defaults pending expert calibration.</p></section>
+      <div class="feature-grid"><article><span class="feature-number">01</span><h3>Evaluate with structure</h3><p id="criterion-total">104 criteria across 20 domains, including three specialist assessments.</p></article><article><span class="feature-number">02</span><h3>Follow the evidence</h3><p>Scores connect to exact excerpts at an immutable GitHub revision.</p></article><article><span class="feature-number">03</span><h3>Know what is unknown</h3><p>Evidence coverage is reported separately from implementation quality.</p></article></div>
+      <section class="rubric-overview"><div><div class="eyebrow">THE EVALUATION FRAMEWORK</div><h2>Shared foundations. Deeper specialist evidence.</h2></div><div class="core-grid"><div><b>70%</b><span>Existing core<br>and functional skills</span></div><div><b>30%</b><span>Role-specific<br>specialist attributes</span></div></div><p class="muted">Each rubric retains its original emphasis within the shared 70% and assigns 30% to its own specialist criteria. Specialist evidence is required for a maturity band. Weights remain defaults pending calibration.</p></section>
     </section>
     <section id="review" hidden>
-      <div class="eyebrow">REPOSITORY ASSESSMENT</div><div class="report-heading"><div><h1 id="review-title"></h1><p id="review-meta" class="muted"></p></div><div class="actions"><button id="cancel" class="secondary" hidden>Cancel review</button><button id="retry" class="secondary" hidden>Retry / resume</button><a id="export-all" class="secondary" hidden>Export all reports ↗</a></div></div>
+      <div class="eyebrow">REPOSITORY ASSESSMENT</div><div class="report-heading"><div><h1 id="review-title"></h1><p id="review-meta" class="muted"></p></div><div class="actions"><button id="cancel" class="secondary" hidden>Cancel review</button><button id="retry" class="secondary" hidden>Retry / resume</button><button id="upgrade" class="secondary" hidden>Evaluate latest rubric</button><a id="export-all" class="secondary" hidden>Export all reports ↗</a></div></div>
       <div id="progress" class="progress-card" role="status" aria-live="polite"><span class="spinner"></span><div><strong id="status"></strong><p id="progress-message"></p></div></div>
       <div id="review-error" class="error" role="alert" hidden></div>
       <div id="rubric-cards" class="rubric-cards" aria-label="Choose rubric report" hidden></div>
@@ -41,6 +41,6 @@
       <details id="collection-details" class="collection" hidden><summary>Collection scope and validation notes</summary><div id="collection-content"></div></details>
       <details class="collection"><summary>Review activity</summary><ol id="events"></ol></details>
     </section>
-    <footer>GitHub Code Reviewer <span>•</span> Rubric v1.0 <span>•</span> Repository evidence, with context.</footer>
+    <footer>GitHub Code Reviewer <span>•</span> <span id="rubric-version">Criteria 2.0 · Scoring 2.0</span> <span>•</span> Repository evidence, with context.</footer>
   </main>
 </body></html>

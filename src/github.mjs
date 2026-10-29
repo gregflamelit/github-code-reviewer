@@ -21,6 +21,18 @@ export function priority(path) {
   return (/^readme/i.test(path)?120:0)+(/architecture|adr|requirements|product|user|research|experiment|leakage|calibration|sampling|economics|adoption|recovery|reproducib|drift|causal/i.test(path)?75:0)+(/test|spec|eval/i.test(path)?65:0)+(/\.github\/workflows|schema|migration|auth|security|package\.json|pyproject/i.test(path)?60:0)+(/src\/|app\/|server|main\./i.test(path)?45:0)+(path.split('/').length<3?15:0);
 }
 
+export async function rawFile(repository,commit,file,{signal,fetcher=fetch}={}){
+  const url='https://raw.githubusercontent.com/'+repository+'/'+commit+'/'+file.path.split('/').map(encodeURIComponent).join('/');
+  const response=await fetcher(url,{redirect:'error',signal:AbortSignal.any([AbortSignal.timeout(25000),...(signal?[signal]:[])])});
+  if(!response.ok)throw new Error('Raw file request failed ('+response.status+').');
+  const reader=response.body.getReader(),chunks=[];let size=0;
+  while(true){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>100000){await reader.cancel();throw new Error('Raw file exceeds the collection limit.');}chunks.push(Buffer.from(value));}
+  const bytes=Buffer.concat(chunks);
+  const digest=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex');
+  if(digest!==file.sha)throw new Error('Raw file does not match the pinned Git blob.');
+  return bytes.toString('utf8');
+}
+
 export async function collectRepository(url,{signal,onProgress=()=>{},request=github}={}) {
   const parsed=parseRepository(url); const base='/repos/'+parsed.fullName; const options={signal};
   onProgress('Resolving public repository and immutable revision');
@@ -42,9 +54,9 @@ export async function collectRepository(url,{signal,onProgress=()=>{},request=gi
     if(budget>=170_000)break;
     onProgress('Collecting '+f.path);
     try {
-      const blob=await request(base+'/git/blobs/'+f.sha,options);
-      if(blob.encoding!=='base64')continue;
-      const text=Buffer.from(blob.content.replace(/\s/g,''),'base64').toString('utf8');
+      let text;
+      if(request===github)text=await rawFile(parsed.fullName,commit.sha,f,options);
+      else{const blob=await request(base+'/git/blobs/'+f.sha,options);if(blob.encoding!=='base64')continue;text=Buffer.from(blob.content.replace(/\s/g,''),'base64').toString('utf8');}
       if(text.includes('\u0000'))continue;
       const content=text.slice(0,14000);
       add({type:'file',path:f.path,url:parsed.url+'/blob/'+commit.sha+'/'+f.path.split('/').map(encodeURIComponent).join('/'),content,truncated:text.length>content.length});
@@ -60,3 +72,5 @@ export async function collectRepository(url,{signal,onProgress=()=>{},request=gi
   warnings.push('Bounded source sample: up to 36 text files, 14,000 characters each, 180,000 characters total. Repository code was not executed. Issues, PR diffs, workflow results, and repository settings are not collected in v1.');
   return {repository:{...parsed,sha:commit.sha,branch:repo.default_branch,description:repo.description,totalFiles:inventory.length,collectedAt:new Date().toISOString()},evidence,warnings};
 }
+import {createHash} from 'node:crypto';
+

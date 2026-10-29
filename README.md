@@ -39,7 +39,7 @@ Credentials are never stored by this application. Codex manages its existing Cha
 ## What happens during a review
 
 1. The local Node server starts Codex App Server over stdio and verifies authentication.
-2. The collector resolves the default branch to an immutable commit SHA and retrieves a bounded file inventory and source sample through GitHub's API.
+2. The collector resolves the default branch to an immutable commit SHA using GitHub's API. Source files come from pinned raw-file URLs and are checked against their Git blob SHA-1 digests, reducing API usage across multiple reviews.
 3. Codex evaluates bounded batches of up to four rubric domains and 16 criteria against that evidence and returns schema-constrained JSON.
 4. Local validation rejects invalid criterion states, duplicate IDs, and out-of-scope criteria. Unsupported scores and exclusions become unknown. Citations must contain an exact quote at a valid range in a collected evidence item.
 5. Application code independently calculates weighted maturity, coverage, unknown-score bounds, and role-specific band eligibility for all three rubrics. Codex does not calculate the final scores. Switch report cards to inspect each rubric or export all three together.

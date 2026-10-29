@@ -1,0 +1,104 @@
+{
+  "rubric_version": "1.1",
+  "assessment_criteria_version": "1.0",
+  "status": "proposed_defaults_pending_calibration",
+  "rubrics": [
+    {
+      "id": "ai_product_manager",
+      "name": "AI Product Manager",
+      "description": "Original balanced rubric emphasizing architecture, human centered design, product management, and responsible AI collaboration.",
+      "core_weights_percent": {
+        "C1": 15,
+        "C2": 15,
+        "C3": 15,
+        "C4": 15
+      },
+      "functional_pool_percent": 40,
+      "functional_weights_percent": {
+        "F1": 14,
+        "F2": 7,
+        "F3": 8,
+        "F4": 6,
+        "F5": 5,
+        "F6": 5,
+        "F7": 12,
+        "F8": 8,
+        "F9": 7,
+        "F10": 9,
+        "F11": 6,
+        "F12": 8,
+        "F13": 5
+      },
+      "critical_domains": [
+        "F1",
+        "F10",
+        "F12"
+      ]
+    },
+    {
+      "id": "ai_engineering",
+      "name": "AI Engineering Rubric",
+      "description": "Emphasizes architecture, implementation correctness, integration, security, testing, and operational reliability.",
+      "core_weights_percent": {
+        "C1": 20,
+        "C2": 5,
+        "C3": 5,
+        "C4": 10
+      },
+      "functional_pool_percent": 60,
+      "functional_weights_percent": {
+        "F1": 20,
+        "F2": 10,
+        "F3": 10,
+        "F4": 5,
+        "F5": 0,
+        "F6": 0,
+        "F7": 10,
+        "F8": 5,
+        "F9": 7,
+        "F10": 12,
+        "F11": 6,
+        "F12": 10,
+        "F13": 5
+      },
+      "critical_domains": [
+        "F1",
+        "F10",
+        "F12",
+        "F13"
+      ]
+    },
+    {
+      "id": "ai_data_science",
+      "name": "AI Data Science Rubric",
+      "description": "Emphasizes statistical validity, analytical correctness, data pipelines, and defensible AI experiments.",
+      "core_weights_percent": {
+        "C1": 10,
+        "C2": 5,
+        "C3": 10,
+        "C4": 10
+      },
+      "functional_pool_percent": 65,
+      "functional_weights_percent": {
+        "F1": 8,
+        "F2": 2,
+        "F3": 5,
+        "F4": 15,
+        "F5": 15,
+        "F6": 25,
+        "F7": 12,
+        "F8": 5,
+        "F9": 2,
+        "F10": 5,
+        "F11": 2,
+        "F12": 3,
+        "F13": 1
+      },
+      "critical_domains": [
+        "F4",
+        "F5",
+        "F6"
+      ]
+    }
+  ]
+}

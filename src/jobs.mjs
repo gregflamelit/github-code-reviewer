@@ -1,0 +1,67 @@
+import { randomUUID } from 'node:crypto';
+import { join } from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
+import { CodexClient } from './codex.mjs';
+import { collectRepository, parseRepository } from './github.mjs';
+import { rubric,profiles,validateResults,aggregateAll } from './rubric.mjs';
+
+export function createJobs({store,dataDir,createClient=options=>new CodexClient(options),collect=collectRepository,retryDelay=3000}) {
+  const controllers=new Map();let active=null;
+  const update=(r,message)=>{r.message=message;r.events=[...(r.events||[]),{at:new Date().toISOString(),message}].slice(-80);store.save(r);};
+  async function run(review) {
+    const controller=new AbortController();controllers.set(review.id,controller);active=review.id;
+    let client;
+    try{
+      client=createClient({cwd:join(dataDir,'worker')});
+      controller.signal.addEventListener('abort',()=>client.close(),{once:true});
+      update(review,'Checking Codex connection');await client.initialize();
+      if(!(await client.account()).authenticated)throw new Error('Codex is not signed in. Run codex login, then retry.');
+      if(client.selectModel){review.model??=await client.selectModel();update(review,'Using Codex model '+review.model);}
+      if(!review.evidence){
+        review.status='collecting';update(review,'Collecting repository evidence');
+        Object.assign(review,await collect(review.url,{signal:controller.signal,onProgress:m=>update(review,m)}));store.save(review);
+      }
+      const domains=rubric.domains.filter(d=>!d.criteria.every(c=>review.results?.some(r=>r.criterion_id===c.id)));
+      const batches=[];for(let i=0;i<domains.length;i+=4)batches.push(domains.slice(i,i+4));
+      review.status='evaluating';review.results??=[];review.summaries??=[];review.validationWarnings??=[];
+      for(const [i,batch] of batches.entries()){
+        if(controller.signal.aborted)throw controller.signal.reason;
+        if(batch.every(d=>d.criteria.every(c=>review.results.some(r=>r.criterion_id===c.id))))continue;
+        update(review,'Evaluation batch '+(i+1)+' of '+batches.length);
+        let output;
+        for(let attempt=1;attempt<=3;attempt++){
+          try{output=await client.evaluate({domains:batch,evidence:review.evidence,model:review.model,signal:controller.signal,onProgress:m=>update(review,m)});break;}
+          catch(error){
+            if(controller.signal.aborted||attempt===3||!/at capacity|rate.limit|429|temporarily unavailable|overloaded/i.test(error.message))throw error;
+            update(review,'Codex temporarily unavailable; retrying batch (attempt '+(attempt+1)+' of 3)');
+            await delay(retryDelay*attempt,undefined,{signal:controller.signal});
+          }
+        }
+        const validated=validateResults(output,batch,review.evidence);
+        const ids=new Set(batch.flatMap(d=>d.criteria.map(c=>c.id)));
+        review.results=review.results.filter(r=>!ids.has(r.criterion_id)).concat(validated.results);
+        review.summaries.push(validated.summary);review.validationWarnings.push(...validated.warnings);store.save(review);
+      }
+      review.reports=aggregateAll(review.results);review.report=review.reports[0];review.scoringVersion='1.1';review.status='completed';update(review,'Evaluation complete — three rubric reports');
+    }catch(e){review.status=controller.signal.aborted?'cancelled':'failed';update(review,e.message||String(e));}
+    finally{client?.close();controllers.delete(review.id);active=null;}
+  }
+  return {
+    start({url,profile='comprehensive'}){
+      if(active)throw Object.assign(new Error('A review is already running. Wait or cancel it first.'),{status:409});
+      if(!Object.hasOwn(profiles,profile))throw Object.assign(new Error('Unknown assessment profile.'),{status:400});
+      const parsed=parseRepository(url);const now=new Date().toISOString();
+      const review=store.save({id:randomUUID(),url:parsed.url,profile:'comprehensive',status:'queued',createdAt:now,updatedAt:now,message:'Queued',appVersion:'0.1.0',rubricVersion:rubric.rubric_version,assessmentMode:'repository_inspection',subjectType:'repository'});
+      void run(review);return review;
+    },
+    retry(id){
+      if(active)throw Object.assign(new Error('A review is already running.'),{status:409});
+      const r=store.get(id);if(!r)throw Object.assign(new Error('Review not found.'),{status:404});
+      if(r.status==='completed'&&rubric.domains.every(d=>d.criteria.every(c=>r.results?.some(row=>row.criterion_id===c.id))))throw Object.assign(new Error('Review is already complete. Start a new review to refresh evidence.'),{status:409});
+      r.status='queued';delete r.report;delete r.reports;store.save(r);void run(r);return r;
+    },
+    cancel(id){const c=controllers.get(id);if(!c)throw Object.assign(new Error('No running review with this ID.'),{status:409});c.abort(new Error('Cancelled by user.'));},
+    shutdown(){for(const c of controllers.values())c.abort(new Error('Application shutting down.'));},
+    get active(){return active;}
+  };
+}

@@ -15,7 +15,7 @@ function render(r){
   const reviewCatalog=r.catalog||catalog;
   $('#rubric-version').textContent='Criteria '+reviewCatalog.rubric.rubric_version+' · Scoring '+(r.scoringVersion||reviewCatalog.scoringConfig.rubric_version);
   $('#review-title').textContent=r.repository?.fullName||r.url.replace('https://github.com/','');
-  $('#review-meta').textContent=['Three rubric reports',r.portfolio?r.portfolio.included.length+' public repositories · consolidated assessment':r.repository?.sha?'Commit '+r.repository.sha.slice(0,12):'Collecting evidence','Repository evidence only'].join('  ·  ');
+  $('#review-meta').textContent=[reviewCatalog.scoringConfig.rubrics.length+' rubric reports',r.portfolio?r.portfolio.included.length+' public repositories · consolidated assessment':r.repository?.sha?'Commit '+r.repository.sha.slice(0,12):'Collecting evidence','Repository evidence only'].join('  ·  ');
   const busy=running.has(r.status);$('#progress').hidden=!busy;$('#status').textContent=r.status[0].toUpperCase()+r.status.slice(1);$('#progress-message').textContent=r.message;
   $('#deep-evidence').hidden=!r.evidence;
   const collections=(r.portfolio?.included||[r.repository]).filter(repo=>repo?.evidenceCollection);
@@ -77,4 +77,4 @@ function render(r){
   $('#collection-details').hidden=!r.evidence;
   $('#collection-content').replaceChildren(el('p',{text:(r.evidence?.length||0)+' evidence items · '+(r.portfolio?r.portfolio.included.length+' repositories':(r.repository?.totalFiles||0)+' repository files')+' · '+(r.repository?.collectedAt||r.createdAt)}),el('code',{text:r.repository?.sha||''}),el('ul',{},[...(r.warnings||[]),...(r.validationWarnings||[])].map(text=>el('li',{text}))));
 }
-try{catalog=await api('/api/rubric');$('#criterion-total').textContent=catalog.rubric.domains.reduce((sum,d)=>sum+d.criteria.length,0)+' criteria across '+catalog.rubric.domains.length+' domains, including three specialist assessments.';$('#rubric-version').textContent='Criteria '+catalog.rubric.rubric_version+' · Scoring '+catalog.scoringConfig.rubric_version;await history();void checkHealth();if(/^[a-f0-9-]{36}$/.test(location.hash.slice(1)))await openReview(location.hash.slice(1));}catch(e){showError(e.message);}
+try{catalog=await api('/api/rubric');$('#criterion-total').textContent=catalog.rubric.domains.reduce((sum,d)=>sum+d.criteria.length,0)+' criteria across '+catalog.rubric.domains.length+' domains, including '+catalog.scoringConfig.rubrics.length+' specialist assessments.';$('#rubric-version').textContent='Criteria '+catalog.rubric.rubric_version+' · Scoring '+catalog.scoringConfig.rubric_version;await history();void checkHealth();if(/^[a-f0-9-]{36}$/.test(location.hash.slice(1)))await openReview(location.hash.slice(1));}catch(e){showError(e.message);}

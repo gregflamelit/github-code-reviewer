@@ -29,7 +29,7 @@ export async function createReportPdf(review,{rubricId}={}){
       for(const group of groups||[]){heading(group.title,3);for(const c of group.criteria){heading(c.criterionId+' '+c.title+' | '+(c.score==null?'Unknown':c.score+'/4'),3);text(c.rationale);text('Next validation: '+(c.nextValidation||'Collect direct supporting evidence.'));for(const ref of c.evidence||[])link(ref.path+' (excerpt lines '+ref.start_line+'-'+ref.end_line+')',ref.url);}}
     }
   }
-  heading('GitHub Code Reviewer',1);text(rubricId?reports[0].rubricName:'Consolidated evaluation - all three rubrics');heading(title,1);
+  heading('GitHub Code Reviewer',1);text(rubricId?reports[0].rubricName:'Consolidated evaluation - all '+reports.length+' rubrics');heading(title,1);
   text('Evaluated: '+review.createdAt+' | Criteria '+(review.rubricVersion||'historical')+' | Scoring '+(review.scoringVersion||'historical'));
   text('This report evaluates sampled repository artifacts, not personal proficiency or authorship. Scores describe observed criteria. Evidence coverage is separate from quality; unknown is not zero. Source inspection does not verify that tests passed or that discussion claims are true.');
   for(const report of reports){heading(report.rubricName,3);text('Score '+number(report.score)+'/100 | Evidence coverage '+number(report.coverage)+'% | '+report.band);text('Possible score range '+number(report.lower)+'-'+number(report.upper)+'. Bounds represent unknown criteria, not statistical confidence.');}

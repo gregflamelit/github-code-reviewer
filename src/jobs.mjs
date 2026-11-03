@@ -24,7 +24,7 @@ export function createJobs({store,dataDir,createClient=options=>new CodexClient(
         review.status='collecting';update(review,review.subjectType==='portfolio'?'Discovering public repositories':'Collecting repository evidence');
         Object.assign(review,await collect(review.url,{signal:controller.signal,onProgress:m=>update(review,m)}));store.save(review);
       }
-      const domains=catalog.rubric.domains.filter(d=>!d.criteria.every(c=>review.results?.some(r=>r.criterion_id===c.id)));
+      const domains=catalog.rubric.domains.map(d=>({...d,criteria:d.criteria.filter(c=>!review.results?.some(r=>r.criterion_id===c.id))})).filter(d=>d.criteria.length);
       const batches=[];let next=[];let count=0;
       for(const domain of domains){if(next.length&&(next.length>=4||count+domain.criteria.length>16)){batches.push(next);next=[];count=0;}next.push(domain);count+=domain.criteria.length;}
       if(next.length)batches.push(next);
@@ -51,7 +51,7 @@ export function createJobs({store,dataDir,createClient=options=>new CodexClient(
       if(review.portfolio&&!review.portfolio.collectionComplete)for(const report of review.reports){report.eligible=false;report.band='Provisional — repository collection incomplete';report.blockers.push({id:'portfolio_scope',reason:'One or more selected repositories lack collected source evidence'});}
       review.insights=buildInsights(review.reports,catalog,review.validationWarnings);
       for(const report of review.reports)report.insights=buildInsights([report],catalog,review.validationWarnings);
-      review.report=review.reports[0];review.scoringVersion=catalog.scoringConfig.rubric_version;review.status='completed';update(review,'Evaluation complete — three rubric reports');
+      review.report=review.reports[0];review.scoringVersion=catalog.scoringConfig.rubric_version;review.status='completed';update(review,'Evaluation complete — '+review.reports.length+' rubric reports');
     }catch(e){review.status=controller.signal.aborted?'cancelled':'failed';update(review,e.message||String(e));}
     finally{client?.close();controllers.delete(review.id);active=null;}
   }
@@ -60,7 +60,7 @@ export function createJobs({store,dataDir,createClient=options=>new CodexClient(
       if(active)throw Object.assign(new Error('A review is already running. Wait or cancel it first.'),{status:409});
       if(!Object.hasOwn(profiles,profile))throw Object.assign(new Error('Unknown assessment profile.'),{status:400});
       const parsed=parseGitHubTarget(url);const now=new Date().toISOString();
-      const review=store.save({id:randomUUID(),url:parsed.url,target:parsed,profile:'comprehensive',status:'queued',createdAt:now,updatedAt:now,message:'Queued',appVersion:'0.4.0',rubricVersion:rubric.rubric_version,scoringVersion:currentCatalog.scoringConfig.rubric_version,catalog:structuredClone(currentCatalog),assessmentMode:parsed.kind==='portfolio'?'portfolio_repository_inspection':'repository_inspection',subjectType:parsed.kind});
+      const review=store.save({id:randomUUID(),url:parsed.url,target:parsed,profile:'comprehensive',status:'queued',createdAt:now,updatedAt:now,message:'Queued',appVersion:'0.5.0',rubricVersion:rubric.rubric_version,scoringVersion:currentCatalog.scoringConfig.rubric_version,catalog:structuredClone(currentCatalog),assessmentMode:parsed.kind==='portfolio'?'portfolio_repository_inspection':'repository_inspection',subjectType:parsed.kind});
       void run(review);return review;
     },
     retry(id){
@@ -76,9 +76,10 @@ export function createJobs({store,dataDir,createClient=options=>new CodexClient(
       const oldCatalog=getReviewCatalog(previous);
       if(oldCatalog.rubric.rubric_version===rubric.rubric_version&&oldCatalog.scoringConfig.rubric_version===currentCatalog.scoringConfig.rubric_version)throw Object.assign(new Error('This review already uses the latest rubric. Start a new review to refresh evidence.'),{status:409});
       const oldCriteria=new Map(oldCatalog.rubric.domains.flatMap(d=>d.criteria.map(c=>[c.id,c])));
-      const compatible=new Set(rubric.domains.flatMap(d=>d.criteria).filter(c=>JSON.stringify(c)===JSON.stringify(oldCriteria.get(c.id))).map(c=>c.id));
+      const semantics=criterion=>{if(!criterion)return null;const {domain_weight_percent,...definition}=criterion;return JSON.stringify(definition);};
+      const compatible=new Set(rubric.domains.flatMap(d=>d.criteria).filter(c=>semantics(c)===semantics(oldCriteria.get(c.id))).map(c=>c.id));
       const now=new Date().toISOString();
-      const r=store.save({id:randomUUID(),url:previous.url,target:previous.target,profile:'comprehensive',status:'queued',createdAt:now,updatedAt:now,message:'Queued for latest rubric',appVersion:'0.4.0',rubricVersion:rubric.rubric_version,scoringVersion:currentCatalog.scoringConfig.rubric_version,catalog:structuredClone(currentCatalog),assessmentMode:previous.assessmentMode||'repository_inspection',subjectType:previous.subjectType||'repository',upgradedFrom:id,model:previous.model,repository:structuredClone(previous.repository),portfolio:structuredClone(previous.portfolio),evidence:structuredClone(previous.evidence),warnings:structuredClone(previous.warnings||[]),results:structuredClone((previous.results||[]).filter(row=>compatible.has(row.criterion_id))),summaries:structuredClone(previous.summaries||[]),reusedAssessment:{reviewId:id,criteriaVersion:oldCatalog.rubric.rubric_version,criterionIds:(previous.results||[]).filter(row=>compatible.has(row.criterion_id)).map(row=>row.criterion_id)}});
+      const r=store.save({id:randomUUID(),url:previous.url,target:previous.target,profile:'comprehensive',status:'queued',createdAt:now,updatedAt:now,message:'Queued for latest rubric',appVersion:'0.5.0',rubricVersion:rubric.rubric_version,scoringVersion:currentCatalog.scoringConfig.rubric_version,catalog:structuredClone(currentCatalog),assessmentMode:previous.assessmentMode||'repository_inspection',subjectType:previous.subjectType||'repository',upgradedFrom:id,model:previous.model,repository:structuredClone(previous.repository),portfolio:structuredClone(previous.portfolio),evidence:structuredClone(previous.evidence),warnings:structuredClone(previous.warnings||[]),results:structuredClone((previous.results||[]).filter(row=>compatible.has(row.criterion_id))),summaries:structuredClone(previous.summaries||[]),reusedAssessment:{reviewId:id,criteriaVersion:oldCatalog.rubric.rubric_version,criterionIds:(previous.results||[]).filter(row=>compatible.has(row.criterion_id)).map(row=>row.criterion_id)}});
       void run(r);return r;
     },
     cancel(id){const c=controllers.get(id);if(!c)throw Object.assign(new Error('No running review with this ID.'),{status:409});c.abort(new Error('Cancelled by user.'));},

@@ -23,5 +23,5 @@ export function buildInsights(reports,catalog,validationWarnings=[]){
     const criteria=[...g[field].values()].sort((a,b)=>(b.impact??b.weight)-(a.impact??a.weight)||a.criterionId.localeCompare(b.criterionId));
     return {domainId:g.domainId,title:g.title,priority:criteria.reduce((s,c)=>s+(c.impact??c.weight),0),criteria:criteria.slice(0,3)};
   }).filter(g=>g.criteria.length).sort((a,b)=>b.priority-a.priority||a.domainId.localeCompare(b.domainId)).slice(0,5);
-  return {method:'Highest weighted domain opportunities; each criterion uses its largest effective weight across the three rubrics. Demonstrated weaknesses require scored evidence; unknowns are listed separately.',demonstrated:ranked('demonstrated'),evidenceGaps:ranked('unknown')};
+  return {method:'Highest weighted domain opportunities; each criterion uses its largest effective weight across the selected reports. Demonstrated weaknesses require scored evidence; unknowns are listed separately.',demonstrated:ranked('demonstrated'),evidenceGaps:ranked('unknown')};
 }

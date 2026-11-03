@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {rubric,aggregate,aggregateAll,scoringConfig,validateResults,legacyCatalog,getReviewCatalog} from '../src/rubric.mjs';
+import {rubric,aggregate,aggregateAll,scoringConfig,validateResults,legacyCatalog,specialistV2Catalog,getReviewCatalog} from '../src/rubric.mjs';
 const all=(score=3)=>rubric.domains.flatMap(d=>d.criteria.map(c=>({criterion_id:c.id,status:'scored',score,confidence:'high',rationale:'Direct evidence',evidence:[],next_validation:''})));
-test('104 criteria include 36 specialist criteria with normalized domain weights',()=>{
-  assert.equal(rubric.domains.flatMap(d=>d.criteria).length,104);
-  assert.equal(new Set(rubric.domains.flatMap(d=>d.criteria.map(c=>c.id))).size,104);
-  for(const d of rubric.domains)assert.equal(d.criteria.reduce((s,c)=>s+c.domain_weight_percent,0),100);
-  assert.equal(rubric.domains.filter(d=>d.pool==='role').flatMap(d=>d.criteria).length,36);
+test('128 criteria include 60 specialist criteria with normalized domain weights',()=>{
+  assert.equal(rubric.domains.flatMap(d=>d.criteria).length,128);
+  assert.equal(new Set(rubric.domains.flatMap(d=>d.criteria.map(c=>c.id))).size,128);
+  for(const d of rubric.domains)assert.ok(Math.abs(d.criteria.reduce((s,c)=>s+c.domain_weight_percent,0)-100)<1e-8);
+  assert.equal(rubric.domains.filter(d=>d.pool==='role').flatMap(d=>d.criteria).length,60);
   assert.equal(rubric.domains.filter(d=>d.pool==='core').reduce((s,d)=>s+d.weight,0),60);
   assert.equal(rubric.domains.filter(d=>d.pool==='functional').reduce((s,d)=>s+d.weight,0),100);
 });
@@ -28,17 +28,36 @@ test('strong overall score cannot conceal weak core capability',()=>{
 test('empty evidence yields null score and full uncertainty',()=>{
   const report=aggregate([],'comprehensive');assert.equal(report.score,null);assert.equal(report.coverage,0);assert.equal(report.lower,0);assert.equal(report.upper,100);
 });
-test('all three rubric weight systems independently sum to 100 percent',()=>{
+test('all four rubric weight systems independently sum to 100 percent',()=>{
   for(const lens of scoringConfig.rubrics){assert.equal(Object.values(lens.core_weights_percent).reduce((s,w)=>s+w,0)+lens.functional_pool_percent+lens.role_pool_percent,100);assert.equal(Object.values(lens.functional_weights_percent).reduce((s,w)=>s+w,0),100);}
+});
+
+test('four reports each contain 15 equal specialist attributes worth 60 percent',()=>{
+  assert.equal(scoringConfig.rubrics.length,4);
+  for(const report of aggregateAll(all(4))){
+    const role=report.domains.find(d=>d.pool==='role');assert.equal(role.rows.length,15);assert.equal(role.weight,.6);assert.equal(report.domains.flatMap(d=>d.rows).length,83);
+    for(const row of role.rows){const changed=all(4).map(r=>r.criterion_id===row.criterion_id?{...r,score:0}:r);assert.equal(aggregateAll(changed).find(r=>r.rubricId===report.rubricId).score,96);}
+  }
+});
+
+test('Human Centered Design specialists affect only their own report and retain missing-evidence gates',()=>{
+  const report=aggregateAll(all(4).map(r=>r.criterion_id.startsWith('R4.')?{...r,score:0}:r));assert.deepEqual(report.map(r=>r.score),[100,100,100,40]);assert.equal(report[3].rubricName,'Human Centered Design');
+  const missing=aggregateAll(all(4).map(r=>r.criterion_id.startsWith('R4.')?{...r,status:'unknown',score:null}:r))[3];assert.equal(missing.coverage,40);assert.equal(missing.eligible,false);assert.ok(missing.blockers.some(b=>b.id==='R4'));
+});
+
+test('version 2 catalogs preserve three reports and the original 30 percent specialist weights',()=>{
+  assert.equal(getReviewCatalog({rubricVersion:'2.0'}),specialistV2Catalog);
+  const rows=specialistV2Catalog.rubric.domains.flatMap(d=>d.criteria.map(c=>({criterion_id:c.id,status:'scored',score:c.id.startsWith('R2.')?1:4})));
+  const reports=aggregateAll(rows,specialistV2Catalog);assert.equal(reports.length,3);assert.equal(reports[1].score,77.5);assert.equal(reports[1].criteriaVersion,'2.0');assert.equal(reports[1].domains.find(d=>d.pool==='role').weight,.3);
 });
 test('same assessments yield independently weighted engineering and data science scores',()=>{
   const rows=all(4).map(r=>['F4','F5','F6'].includes(r.criterion_id.split('.')[0])?{...r,score:1}:r);
-  const reports=aggregateAll(rows);assert.ok(Math.abs(reports[0].score-96.64)<1e-8);assert.ok(Math.abs(reports[1].score-98.425)<1e-8);assert.ok(Math.abs(reports[2].score-81.23125)<1e-8);
+  const reports=aggregateAll(rows);assert.ok(Math.abs(reports[0].score-98.08)<1e-8);assert.ok(Math.abs(reports[1].score-99.1)<1e-8);assert.ok(Math.abs(reports[2].score-89.275)<1e-8);
   assert.equal(reports[0].rubricName,'AI Product Manager');assert.equal(reports[1].rubricName,'AI Engineering Rubric');assert.equal(reports[2].rubricName,'AI Data Science Rubric');
 });
 test('zero-weight data science criteria do not change engineering scores or coverage',()=>{
   const rows=all(4).map(r=>r.criterion_id.startsWith('F6.')?{...r,status:'unknown',score:null}:r);
-  const reports=aggregateAll(rows);assert.ok(Math.abs(reports[1].score-100)<1e-8);assert.ok(Math.abs(reports[1].coverage-100)<1e-8);assert.ok(reports[2].coverage<90);assert.equal(reports[2].eligible,false);
+  const reports=aggregateAll(rows);assert.ok(Math.abs(reports[1].score-100)<1e-8);assert.ok(Math.abs(reports[1].coverage-100)<1e-8);assert.ok(reports[2].coverage<100);assert.equal(reports[2].eligible,false);
 });
 test('data science role cannot receive a band when its central skill is not applicable',()=>{
   const rows=all(4).map(r=>r.criterion_id.startsWith('F6.')?{...r,status:'not_applicable',score:null}:r);
@@ -46,18 +65,18 @@ test('data science role cannot receive a band when its central skill is not appl
 });
 test('a specialist assessment changes only its own report and blocks an inflated band',()=>{
   const rows=all(4).map(r=>r.criterion_id.startsWith('R2.')?{...r,score:1}:r);
-  const reports=aggregateAll(rows);assert.equal(reports[0].score,100);assert.equal(reports[1].score,77.5);assert.equal(reports[1].band,'Uneven');assert.equal(reports[2].score,100);
-  for(const r of reports){assert.equal(r.domains.filter(d=>d.pool==='role').length,1);assert.equal(r.domains.find(d=>d.pool==='role').weight,.3);}
+  const reports=aggregateAll(rows);assert.equal(reports[0].score,100);assert.equal(reports[1].score,55);assert.equal(reports[1].band,'Functional');assert.equal(reports[2].score,100);
+  for(const r of reports){assert.equal(r.domains.filter(d=>d.pool==='role').length,1);assert.equal(r.domains.find(d=>d.pool==='role').weight,.6);}
 });
 test('criterion weights affect specialist scores and evidence coverage',()=>{
-  let rows=all(4).map(r=>r.criterion_id==='R1.1'?{...r,score:0}:r);assert.equal(aggregateAll(rows)[0].score,97);
-  rows=all(4).map(r=>r.criterion_id==='R1.12'?{...r,score:0}:r);assert.equal(aggregateAll(rows)[0].score,98.5);
-  rows=all(4).map(r=>r.criterion_id==='R1.1'?{...r,status:'unknown',score:null}:r);assert.equal(aggregateAll(rows)[0].coverage,97);
+  let rows=all(4).map(r=>r.criterion_id==='R1.1'?{...r,score:0}:r);assert.equal(aggregateAll(rows)[0].score,96);
+  rows=all(4).map(r=>r.criterion_id==='R1.12'?{...r,score:0}:r);assert.equal(aggregateAll(rows)[0].score,96);
+  rows=all(4).map(r=>r.criterion_id==='R1.1'?{...r,status:'unknown',score:null}:r);assert.equal(aggregateAll(rows)[0].coverage,96);
 });
 test('missing or excluded specialist evidence cannot disappear into shared score normalization',()=>{
   for(const status of ['unknown','not_applicable']){
     const rows=all(4).map(r=>r.criterion_id.startsWith('R3.')?{...r,status,score:null}:r);
-    const report=aggregateAll(rows)[2];assert.equal(report.coverage,70);assert.equal(report.lower,70);assert.equal(report.upper,100);assert.equal(report.eligible,false);assert.ok(report.blockers.some(b=>b.id==='R3'));
+    const report=aggregateAll(rows)[2];assert.equal(report.coverage,40);assert.equal(report.lower,40);assert.equal(report.upper,100);assert.equal(report.eligible,false);assert.ok(report.blockers.some(b=>b.id==='R3'));
   }
 });
 test('legacy catalog preserves scoring 1.1 rather than applying specialist weights retroactively',()=>{

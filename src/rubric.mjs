@@ -7,9 +7,14 @@ export const legacyCatalog = {
   rubric:JSON.parse(readFileSync(new URL('../rubric-versions/criteria-1.0.json',import.meta.url),'utf8')),
   scoringConfig:JSON.parse(readFileSync(new URL('../rubric-versions/scoring-1.1.json',import.meta.url),'utf8'))
 };
+export const specialistV2Catalog = {
+  rubric:JSON.parse(readFileSync(new URL('../rubric-versions/criteria-2.0.json',import.meta.url),'utf8')),
+  scoringConfig:JSON.parse(readFileSync(new URL('../rubric-versions/scoring-2.0.json',import.meta.url),'utf8'))
+};
 export function getReviewCatalog(review){
   if(review.catalog)return review.catalog;
   if(!review.rubricVersion||review.rubricVersion==='1.0')return legacyCatalog;
+  if(review.rubricVersion==='2.0')return specialistV2Catalog;
   throw new Error('This review is missing its versioned rubric snapshot. Start a new review.');
 }
 export const criterionCount = catalog=>catalog.rubric.domains.reduce((sum,d)=>sum+d.criteria.length,0);

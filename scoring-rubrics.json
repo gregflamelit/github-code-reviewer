@@ -1,19 +1,19 @@
 {
-  "rubric_version": "2.0",
-  "assessment_criteria_version": "2.0",
+  "rubric_version": "3.0",
+  "assessment_criteria_version": "3.0",
   "status": "proposed_defaults_pending_calibration",
   "rubrics": [
     {
       "id": "ai_product_manager",
       "name": "AI Product Manager",
-      "description": "Original balanced rubric emphasizing architecture, human centered design, product management, and responsible AI collaboration. Includes a required 30% specialist evidence assessment.",
+      "description": "Original balanced rubric emphasizing architecture, human centered design, product management, and responsible AI collaboration. Includes a required 60% specialist evidence assessment.",
       "core_weights_percent": {
-        "C1": 10.5,
-        "C2": 10.5,
-        "C3": 10.5,
-        "C4": 10.5
+        "C1": 6,
+        "C2": 6,
+        "C3": 6,
+        "C4": 6
       },
-      "functional_pool_percent": 28,
+      "functional_pool_percent": 16,
       "functional_weights_percent": {
         "F1": 14,
         "F2": 7,
@@ -36,19 +36,19 @@
         "R1"
       ],
       "role_domain": "R1",
-      "role_pool_percent": 30
+      "role_pool_percent": 60
     },
     {
       "id": "ai_engineering",
       "name": "AI Engineering Rubric",
-      "description": "Emphasizes architecture, implementation correctness, integration, security, testing, and operational reliability. Includes a required 30% specialist evidence assessment.",
+      "description": "Emphasizes architecture, implementation correctness, integration, security, testing, and operational reliability. Includes a required 60% specialist evidence assessment.",
       "core_weights_percent": {
-        "C1": 14,
-        "C2": 3.5,
-        "C3": 3.5,
-        "C4": 7
+        "C1": 8,
+        "C2": 2,
+        "C3": 2,
+        "C4": 4
       },
-      "functional_pool_percent": 42,
+      "functional_pool_percent": 24,
       "functional_weights_percent": {
         "F1": 20,
         "F2": 10,
@@ -72,19 +72,19 @@
         "R2"
       ],
       "role_domain": "R2",
-      "role_pool_percent": 30
+      "role_pool_percent": 60
     },
     {
       "id": "ai_data_science",
       "name": "AI Data Science Rubric",
-      "description": "Emphasizes statistical validity, analytical correctness, data pipelines, and defensible AI experiments. Includes a required 30% specialist evidence assessment.",
+      "description": "Emphasizes statistical validity, analytical correctness, data pipelines, and defensible AI experiments. Includes a required 60% specialist evidence assessment.",
       "core_weights_percent": {
-        "C1": 7,
-        "C2": 3.5,
-        "C3": 7,
-        "C4": 7
+        "C1": 4,
+        "C2": 2,
+        "C3": 4,
+        "C4": 4
       },
-      "functional_pool_percent": 45.5,
+      "functional_pool_percent": 26,
       "functional_weights_percent": {
         "F1": 8,
         "F2": 2,
@@ -107,7 +107,43 @@
         "R3"
       ],
       "role_domain": "R3",
-      "role_pool_percent": 30
+      "role_pool_percent": 60
+    },
+    {
+      "id": "human_centered_design",
+      "name": "Human Centered Design",
+      "description": "Emphasizes research-grounded, inclusive, usable, accessible and trustworthy experiences, with a required 60% specialist assessment.",
+      "core_weights_percent": {
+        "C1": 3,
+        "C2": 12,
+        "C3": 6,
+        "C4": 3
+      },
+      "functional_pool_percent": 16,
+      "functional_weights_percent": {
+        "F1": 15,
+        "F2": 5,
+        "F3": 3,
+        "F4": 3,
+        "F5": 8,
+        "F6": 3,
+        "F7": 10,
+        "F8": 8,
+        "F9": 5,
+        "F10": 12,
+        "F11": 10,
+        "F12": 10,
+        "F13": 8
+      },
+      "critical_domains": [
+        "C2",
+        "F1",
+        "F10",
+        "F12",
+        "R4"
+      ],
+      "role_domain": "R4",
+      "role_pool_percent": 60
     }
   ]
 }

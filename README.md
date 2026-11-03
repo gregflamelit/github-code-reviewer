@@ -1,6 +1,6 @@
 # GitHub Code Reviewer
 
-A local application that evaluates a public GitHub profile or repository with your signed-in Codex CLI and 104 criteria (68 shared plus 36 specialist). One consolidated assessment produces three independently weighted reports: **AI Product Manager**, **AI Engineering Rubric**, and **AI Data Science Rubric**. Reports include scores, evidence coverage, exact quoted citations, ranked improvements, missing evidence, and follow-up validation tasks.
+A local application that evaluates a public GitHub profile or repository with your signed-in Codex CLI and 128 criteria (68 shared plus 60 specialist). One consolidated assessment produces four independently weighted reports: **AI Product Manager**, **AI Engineering Rubric**, **AI Data Science Rubric**, and **Human Centered Design**. Reports include scores, evidence coverage, exact quoted citations, ranked improvements, missing evidence, and follow-up validation tasks.
 
 ## Run locally
 
@@ -23,7 +23,7 @@ The launcher can discover the Node and Codex runtimes bundled with the Codex des
 node server.mjs
 ```
 
-Open **http://127.0.0.1:4317**, paste a public profile URL such as `https://github.com/username` or a repository URL such as `https://github.com/octocat/Hello-World`, and click **Evaluate GitHub URL**. All three reports are created automatically, including the specialist criteria. If Codex is not signed in, run `codex login` in your terminal first. Leave the server running while reviewing; use Ctrl+C to stop it.
+Open **http://127.0.0.1:4317**, paste a public profile URL such as `https://github.com/username` or a repository URL such as `https://github.com/octocat/Hello-World`, and click **Evaluate GitHub URL**. All four reports are created automatically, including the specialist criteria. If Codex is not signed in, run `codex login` in your terminal first. Leave the server running while reviewing; use Ctrl+C to stop it.
 
 ## Profile evaluations
 
@@ -31,7 +31,7 @@ The collector discovers up to 500 owned public repositories, ordered alphabetica
 
 Each selected repository is pinned to its own immutable commit and sampled under the existing file limits. Evidence is combined round-robin under a shared 180,000-character budget, prioritizing source files ahead of metadata and large inventories, with unique evidence IDs, repository names, and original commit links. The report lists collected projects and file counts, every exclusion and collection failure, discovery limits, and sampling warnings. This is a bounded portfolio sample, not a claim that every public artifact was inspected. Failed selected repositories or projects without sampled source force provisional reports.
 
-Codex assesses each criterion once against the combined evidence, weighing strengths and contradictions across relevant projects. Repository scores are not averaged. The same 104 criterion assessments feed the three existing role-specific weight systems; rubric definitions and score calculations are unchanged. Coverage measures observed criteria under each rubric's weights, not the percentage of repository files inspected. Unknown evidence does not count as a demonstrated weakness or a zero score.
+Codex assesses each criterion once against the combined evidence, weighing strengths and contradictions across relevant projects. Repository scores are not averaged. The same 128 criterion assessments feed four independently weighted role reports. Coverage measures observed criteria under each rubric's weights, not the percentage of repository files inspected. Unknown evidence does not count as a demonstrated weakness or a zero score.
 
 Each rubric shows its five highest-priority demonstrated improvement domains and five highest-priority evidence gaps separately. Priorities are calculated locally from effective criterion weights and score shortfalls (scores 0–2 with verified citations); unknown criteria are ranked by weight. Each domain shows up to three actionable criteria, their rationale, source links, and next validation steps. JSON exports include all criterion results, portfolio scope, and both per-rubric and consolidated rankings. Historical reports retain their original scores and evidence snapshots.
 
@@ -45,9 +45,9 @@ The repository total remains 180,000 characters. Portfolios retain a shared 180,
 
 Source and test files are pinned to the evaluated commit. Discussions, reviews, and patches are timestamped mutable snapshots that may postdate it, with their original GitHub links and any PR revision identifiers. Test code does not establish a passing run; an approval, discussion claim, or documented plan does not establish implemented or measured effectiveness. The evaluator receives these distinctions explicitly, and existing citation validation still applies to every scored finding.
 
-Use **Re-evaluate with fresh, deeper evidence** to create a separate review with current evidence and all three scores. Existing reports and their scores remain preserved. Retry/resume continues the saved snapshot instead of silently changing the evidence.
+Use **Re-evaluate with fresh, deeper evidence** to create a separate review with current evidence and all four scores. Existing reports and their scores remain preserved. Retry/resume continues the saved snapshot instead of silently changing the evidence.
 
-Completed reports offer **Download all rubrics PDF** and **Download selected PDF** alongside JSON exports. PDFs contain score/coverage summaries, uncertainty bounds, repository scope, category counts, role-specific improvement priorities, evidence gaps, complete criterion assessments, quoted sources with clickable links, and collection/validation notes. PDF export works on historical completed reports too; it does not refresh evidence or change scores. API: `/api/reviews/:id/export?format=pdf`, optionally adding `&rubric=ai_product_manager`, `ai_engineering`, or `ai_data_science`.
+Completed reports offer **Download all rubrics PDF** and **Download selected PDF** alongside JSON exports. PDFs contain score/coverage summaries, uncertainty bounds, repository scope, category counts, role-specific improvement priorities, evidence gaps, complete criterion assessments, quoted sources with clickable links, and collection/validation notes. PDF export works on historical completed reports too; it does not refresh evidence or change scores. API: `/api/reviews/:id/export?format=pdf`, optionally adding `&rubric=ai_product_manager`, `ai_engineering`, `ai_data_science`, or `human_centered_design`.
 
 The interface, evidence, and database are local. Selected public repository excerpts are sent through Codex to OpenAI for model inference. This is not an offline model.
 
@@ -69,7 +69,7 @@ Credentials are never stored by this application. Codex manages its existing Cha
 2. The collector resolves the default branch to an immutable commit SHA using GitHub's API. Source files come from pinned raw-file URLs and are checked against their Git blob SHA-1 digests, reducing API usage across multiple reviews.
 3. Codex evaluates bounded batches of up to four rubric domains and 16 criteria against that evidence and returns schema-constrained JSON.
 4. Local validation rejects invalid criterion states, duplicate IDs, and out-of-scope criteria. Unsupported scores and exclusions become unknown. Citations must contain an exact quote at a valid range in a collected evidence item.
-5. Application code independently calculates weighted maturity, coverage, unknown-score bounds, and role-specific band eligibility for all three rubrics. Codex does not calculate the final scores. Switch report cards to inspect each rubric or export all three together.
+5. Application code independently calculates weighted maturity, coverage, unknown-score bounds, and role-specific band eligibility for all four rubrics. Codex does not calculate the final scores. Switch report cards to inspect each rubric or export all four together.
 6. SQLite saves evidence, per-batch results, progress, and reports. Failed or interrupted reviews can resume using the captured evidence and completed batches. Retry does not fetch a newer commit; start a new review to refresh evidence.
 
 Only one review runs at a time. Cancel stops the Codex process. Each Codex batch has an eight-minute timeout. The app records incomplete work as cancelled, failed, or interrupted, never as a successful evaluation.
@@ -83,12 +83,18 @@ Only one application process can own a data directory. A process lock prevents a
 - A bounded file inventory and sampled issues, discussions, PR reviews, inline comments, and patch excerpts supplement source evidence. History can postdate the evaluated commit and is labeled accordingly. Workflow run results and repository settings are not verified.
 - Repository source is not installed, built, or executed. Test files demonstrate test design; they do not establish that tests passed.
 - Candidate repository files are never written as executable files or loaded as Codex configuration. Evidence is delivered as untrusted text. The Codex process uses a dedicated worker directory, read-only sandbox, disabled shell/apps/browser/plugin features, no configured MCP servers, and rejects interactive tool and approval requests.
-- Criteria version 2.0 and scoring version 2.0 are proposed defaults pending expert calibration. Unknown evidence has no score. Not-applicable criteria require contextual supporting evidence. Low coverage or an unobserved role-critical skill suppresses that role's maturity band. Full weights and role requirements are in [the three-rubric specification](docs/scoring-rubrics.md).
+- Criteria version 3.0 and scoring version 3.0 are proposed defaults pending expert calibration. Unknown evidence has no score. Not-applicable criteria require contextual supporting evidence. Low coverage or an unobserved role-critical skill suppresses that role's maturity band. Full weights and role requirements are in [the four-rubric specification](docs/scoring-rubrics.md).
 - Citation validation establishes existence and exact text, not semantic truth. Findings still require critical review. Verified critical readiness gates and human overrides are not automated in this release; domain findings must be inspected before decisions.
+
+## Four specialist rubrics and weighting
+
+Each rubric has 15 equally weighted specialist attributes contributing 60% of the overall score (4 percentage points per attribute when fully observed). Shared core and functional attributes contribute the remaining 40%. Core/functional/specialist pools are 24/16/60 for Product Manager, 16/24/60 for Engineering, 14/26/60 for Data Science, and 24/16/60 for Human Centered Design. The 68 shared attributes remain in each report, for 83 attributes per report. A single review assesses 128 unique attributes across all four roles.
+
+The full attribute list, scoring anchors, evidence expectations, and exact weights are in [the rubric specification](docs/scoring-rubrics.md). Unknown specialist evidence reduces coverage instead of reallocating its 60% to shared skills.
 
 ## Historical reports and upgrades
 
-New reviews pin complete criteria and scoring snapshots. Retry uses the saved version. Existing criteria 1.0 / scoring 1.1 reports retain their original results. **Evaluate latest rubric** creates a separate review using the same captured evidence and unchanged compatible assessments, then evaluates the new specialist criteria. Use a new repository review to collect fresh evidence.
+New reviews pin complete criteria and scoring snapshots. Retry uses the saved version. Existing criteria 1.0 / scoring 1.1 and criteria/scoring 2.0 reports retain their original results and three-report structure. **Evaluate latest rubric** creates a separate review using the same captured evidence and unchanged compatible assessments, then evaluates the new specialist criteria. Use a new repository review to collect fresh evidence.
 
 ## Storage and source control
 
@@ -103,6 +109,6 @@ node --check server.mjs
 
 Tests cover scoring and coverage gates, exact citation validation, repository URL boundaries, bounded collection, persistence and interrupted reviews, local HTTP protection, and Codex protocol behavior with a deterministic fake process. Live smoke verification is separate and uses the real signed-in Codex installation.
 
-Key files: `server.mjs`, `src/github.mjs`, `src/codex.mjs`, `src/rubric.mjs`, `src/jobs.mjs`, `src/store.mjs`, and `public/`. All 104 criteria are in `evaluation-rubric.json`; current role weights are in `scoring-rubrics.json`. The authoritative version 2.0 policy and all specialist anchors are in `docs/scoring-rubrics.md`. Shared historical anchors remain in `evaluation-rubric.md`, and archived JSON definitions are under `rubric-versions/`.
+Key files: `server.mjs`, `src/github.mjs`, `src/codex.mjs`, `src/rubric.mjs`, `src/jobs.mjs`, `src/store.mjs`, and `public/`. All 128 criteria are in `evaluation-rubric.json`; current role weights are in `scoring-rubrics.json`. The authoritative version 3.0 policy and all specialist anchors are in `docs/scoring-rubrics.md`. Shared historical anchors remain in `evaluation-rubric.md`, and archived JSON definitions are under `rubric-versions/`.
 
 Official integration reference: [Codex App Server](https://learn.chatgpt.com/docs/app-server).

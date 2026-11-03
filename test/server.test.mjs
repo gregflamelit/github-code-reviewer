@@ -33,12 +33,12 @@ test('HTTP upgrades and exports preserve legacy scoring and expose all versioned
   const legacy={id,url:'https://github.com/a/b',createdAt:new Date().toISOString(),rubricVersion:'1.0',scoringVersion:'1.1',status:'completed',results:rows,reports,report:reports[0],repository:{sha:'a'.repeat(40)},evidence:[{id:'E1',type:'file',content:'source',path:'README.md',url:'https://github.com/a/b'}]};
   app.store.save(legacy);
   try{
-    const current=await(await fetch(base+'/api/rubric')).json();assert.equal(current.rubric.domains.flatMap(d=>d.criteria).length,104);
+    const current=await(await fetch(base+'/api/rubric')).json();assert.equal(current.rubric.domains.flatMap(d=>d.criteria).length,128);
     const before=await(await fetch(base+'/api/reviews/'+id)).json();assert.equal(before.expectedCriteria,68);assert.equal(before.catalog.scoringConfig.rubric_version,'1.1');assert.deepEqual(before.reports.map(({insights,...report})=>report),reports);
     const response=await fetch(base+'/api/reviews/'+id+'/upgrade',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});assert.equal(response.status,202);const created=await response.json();
     for(let n=0;n<100&&app.jobs.active;n++)await new Promise(resolve=>setTimeout(resolve,5));
-    const newer=await(await fetch(base+'/api/reviews/'+created.id+'/export')).json();assert.equal(newer.status,'completed');assert.equal(newer.results.length,104);assert.equal(newer.expectedCriteria,104);assert.equal(newer.catalog.scoringConfig.rubric_version,'2.0');assert.deepEqual(assessed,['R1','R2','R3']);
-    for(const report of newer.reports){const selected=await(await fetch(base+'/api/reviews/'+created.id+'/export?rubric='+report.rubricId)).json();assert.equal(selected.report.scoringVersion,'2.0');assert.equal(selected.report.domains.filter(d=>d.pool==='role').length,1);assert.equal(selected.reports,undefined);}
+    const newer=await(await fetch(base+'/api/reviews/'+created.id+'/export')).json();assert.equal(newer.status,'completed');assert.equal(newer.results.length,128);assert.equal(newer.expectedCriteria,128);assert.equal(newer.catalog.scoringConfig.rubric_version,'3.0');assert.deepEqual(assessed,['R1','R2','R3','R4']);
+    for(const report of newer.reports){const selected=await(await fetch(base+'/api/reviews/'+created.id+'/export?rubric='+report.rubricId)).json();assert.equal(selected.report.scoringVersion,'3.0');assert.equal(selected.report.domains.filter(d=>d.pool==='role').length,1);assert.equal(selected.reports,undefined);}
     const after=await(await fetch(base+'/api/reviews/'+id)).json();assert.deepEqual(after,before);
     const singleId='22222222-2222-4222-8222-222222222222';
     app.store.save({...legacy,id:singleId,reports:undefined,report:{...reports[0],score:17.25,coverage:40,domains:reports[0].domains.slice(0,4)}});
@@ -47,18 +47,20 @@ test('HTTP upgrades and exports preserve legacy scoring and expose all versioned
   }finally{await new Promise(resolve=>app.server.close(resolve));app.store.close();rmSync(dir,{recursive:true,force:true});}
 });
 
-test('HTTP profile submission returns a consolidated manifest, three reports, insights, and exports',async()=>{
+test('HTTP profile submission returns a consolidated manifest, four reports, insights, and exports',async()=>{
   const dir=mkdtempSync(join(tmpdir(),'reviewer-profile-http-'));
   const app=createApplication({dataDir:dir,jobsFactory:args=>createJobs({...args,collect:async()=>({portfolio:{owner:'alice',profileUrl:'https://github.com/alice',included:[{fullName:'alice/project',sha:'a'.repeat(40),incorporatedFiles:1}],excluded:[],failed:[],collectionComplete:true,consolidationMethod:'One combined assessment'},evidence:[{id:'E1',type:'file',repository:'alice/project',commit_sha:'a'.repeat(40),path:'alice/project/main.js',content:'source'}],warnings:[]}),createClient:()=>({initialize:async()=>{},account:async()=>({authenticated:true}),close(){},evaluate:async({domains})=>({summary:'Combined fixture',results:domains.flatMap(d=>d.criteria.map(c=>({criterion_id:c.id,status:'unknown',score:null,confidence:'low',rationale:'Not observed',evidence:[],next_validation:'Collect evidence'})))})})})});
   await new Promise(resolve=>app.server.listen(0,'127.0.0.1',resolve));const base='http://127.0.0.1:'+app.server.address().port;
   try{
     const response=await fetch(base+'/api/reviews',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:'https://github.com/alice?tab=repositories'})});assert.equal(response.status,202);const created=await response.json();
     for(let n=0;n<100&&app.jobs.active;n++)await new Promise(resolve=>setTimeout(resolve,5));
-    const result=await(await fetch(base+'/api/reviews/'+created.id+'/export')).json();assert.equal(result.status,'completed');assert.equal(result.results.length,104);assert.equal(result.reports.length,3);assert.equal(result.portfolio.included[0].fullName,'alice/project');assert.equal(result.evidence[0].commit_sha,'a'.repeat(40));assert.ok(result.reports.every(r=>r.insights.evidenceGaps.length));
+    const result=await(await fetch(base+'/api/reviews/'+created.id+'/export')).json();assert.equal(result.status,'completed');assert.equal(result.results.length,128);assert.equal(result.reports.length,4);assert.equal(result.portfolio.included[0].fullName,'alice/project');assert.equal(result.evidence[0].commit_sha,'a'.repeat(40));assert.ok(result.reports.every(r=>r.insights.evidenceGaps.length));
     const history=await(await fetch(base+'/api/reviews')).json();assert.equal(history[0].subjectType,'portfolio');assert.equal(history[0].portfolio.includedCount,1);
     const selected=await(await fetch(base+'/api/reviews/'+created.id+'/export?rubric=ai_data_science')).json();assert.equal(selected.report.rubricId,'ai_data_science');assert.equal(selected.portfolio.owner,'alice');assert.ok(selected.insights);
     const pdf=await fetch(base+'/api/reviews/'+created.id+'/export?format=pdf');assert.equal(pdf.status,200);assert.equal(pdf.headers.get('content-type'),'application/pdf');assert.match(pdf.headers.get('content-disposition'),/attachment;.*\.pdf/);assert.equal(Buffer.from(await pdf.arrayBuffer()).subarray(0,5).toString(),'%PDF-');
     const onePdf=await fetch(base+'/api/reviews/'+created.id+'/export?format=pdf&rubric=ai_data_science');assert.equal(onePdf.status,200);assert.equal(onePdf.headers.get('content-type'),'application/pdf');
+    const design=await(await fetch(base+'/api/reviews/'+created.id+'/export?rubric=human_centered_design')).json();assert.equal(design.report.rubricName,'Human Centered Design');assert.equal(design.report.domains.find(d=>d.id==='R4').rows.length,15);assert.equal(design.report.domains.find(d=>d.id==='R4').weight,.6);
+    const designPdf=await fetch(base+'/api/reviews/'+created.id+'/export?format=pdf&rubric=human_centered_design');assert.equal(designPdf.status,200);assert.equal(designPdf.headers.get('content-type'),'application/pdf');assert.equal(Buffer.from(await designPdf.arrayBuffer()).subarray(0,5).toString(),'%PDF-');
     assert.equal((await fetch(base+'/api/reviews/'+created.id+'/export?format=pdf&rubric=bad')).status,400);assert.equal((await fetch(base+'/api/reviews/'+created.id+'/export?format=invalid')).status,400);
   }finally{await new Promise(resolve=>app.server.close(resolve));app.store.close();rmSync(dir,{recursive:true,force:true});}
 });

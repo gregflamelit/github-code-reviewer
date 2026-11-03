@@ -92,6 +92,14 @@ Each rubric has 15 equally weighted specialist attributes contributing 60% of th
 
 The full attribute list, scoring anchors, evidence expectations, and exact weights are in [the rubric specification](docs/scoring-rubrics.md). Unknown specialist evidence reduces coverage instead of reallocating its 60% to shared skills.
 
+## Citation repair and verification
+
+New evaluations send line-numbered source text to Codex; the source and stored excerpts stay unchanged. Unsupported scored/excluded findings and missing criterion responses enter a bounded repair stage before final scoring. Exact quotes occurring uniquely within their originally cited evidence item can be realigned locally to verified source lines. There is no fuzzy quote matching or automatic switching between evidence IDs.
+
+Remaining failures are reassessed against the same frozen evidence in requests of at most four criteria, with at most two completed model repair attempts per criterion. The feedback includes the prior proposal and specific validation errors. Codex may correct the citation, revise the finding or score, or explicitly return unknown. Every repaired response passes the original strict quote/range/state checks. Valid findings and intentional unknowns are not retried to chase higher scores. Unsupported findings remaining after the bound stay unknown.
+
+Repair progress, original proposals, verification errors, corrected ranges, and retry outcomes are recorded in the JSON export. Pending repair checkpoints survive interruption so retry/resume does not recollect evidence or repeat completed repairs. Temporary model-capacity failures use the existing bounded request retries; unsuccessful or cancelled requests do not consume completed citation-repair attempts. The UI and PDF exports show recovered counts and unresolved failures. JSON exports also include a strictly validated pre-repair score/coverage baseline from the same fresh model proposals to isolate the repair contribution. These checks verify source text and location, not the semantic truth of every conclusion. Historical completed evaluations are unchanged.
+
 ## Historical reports and upgrades
 
 New reviews pin complete criteria and scoring snapshots. Retry uses the saved version. Existing criteria 1.0 / scoring 1.1 and criteria/scoring 2.0 reports retain their original results and three-report structure. **Evaluate latest rubric** creates a separate review using the same captured evidence and unchanged compatible assessments, then evaluates the new specialist criteria. Use a new repository review to collect fresh evidence.

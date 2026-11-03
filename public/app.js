@@ -13,6 +13,9 @@ async function openReview(id){clearTimeout(timer);currentId=id;window.history.re
 async function poll(){const id=currentId;if(!id)return;try{const r=await api('/api/reviews/'+id);if(currentId!==id)return;render(r);if(running.has(r.status))timer=setTimeout(poll,1800);else history().catch(()=>{});}catch(e){$('#review-error').hidden=false;$('#review-error').textContent=e.message;}}
 function render(r){
   const reviewCatalog=r.catalog||catalog;
+  const repair=r.citationRepair?.summary;
+  $('#citation-repair-stats').hidden=!repair;
+  if(repair)$('#citation-repair-stats').textContent='Citation verification: '+repair.initialUnsupported+' initially unsupported findings · '+repair.realignedCitations+' exact quote ranges realigned · '+repair.retriedCriteria+' findings retried with Codex · '+repair.recovered+' supported assessments recovered · '+repair.settledUnknown+' settled as unknown · '+repair.unresolvedCitationFailures+' unresolved citation failures. Original sources are unchanged. Source-text verification does not establish that every conclusion is correct.';
   $('#rubric-version').textContent='Criteria '+reviewCatalog.rubric.rubric_version+' · Scoring '+(r.scoringVersion||reviewCatalog.scoringConfig.rubric_version);
   $('#review-title').textContent=r.repository?.fullName||r.url.replace('https://github.com/','');
   $('#review-meta').textContent=[reviewCatalog.scoringConfig.rubrics.length+' rubric reports',r.portfolio?r.portfolio.included.length+' public repositories · consolidated assessment':r.repository?.sha?'Commit '+r.repository.sha.slice(0,12):'Collecting evidence','Repository evidence only'].join('  ·  ');

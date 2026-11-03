@@ -38,8 +38,8 @@ test('failed Codex turns do not become successful evaluations',async()=>{
 test('portfolio prompt carries provenance and evaluates combined criteria without averaging',async()=>{
   const process=fakeProcess();const client=new CodexClient({cwd:tmpdir(),spawnProcess:()=>process});
   try{
-    await client.initialize();await client.evaluate({domains:[rubric.domains[0]],assessmentContext:{type:'portfolio',owner:'alice',repositories:[{name:'alice/project',sha:'a'.repeat(40)}]},evidence:[{id:'E1',type:'file',path:'alice/project/main.js',repository:'alice/project',commit_sha:'a'.repeat(40),content:'source'}]});
+    await client.initialize();await client.evaluate({domains:[rubric.domains[0]],assessmentContext:{type:'portfolio',owner:'alice',repositories:[{name:'alice/project',sha:'a'.repeat(40)}]},citationRepair:{mode:'repair_unsupported_findings'},evidence:[{id:'E1',type:'file',path:'alice/project/main.js',repository:'alice/project',commit_sha:'a'.repeat(40),content:'source\nnext'}]});
     const turn=process.calls.find(c=>c.method==='turn/start');const input=JSON.parse(turn.params.input[0].text);
-    assert.equal(input.assessment_mode,'portfolio_repository_inspection');assert.equal(input.evidence[0].repository,'alice/project');assert.equal(input.evidence[0].commit_sha,'a'.repeat(40));assert.match(input.scoring_guidance,/Do not average repository scores/);
+    assert.equal(input.assessment_mode,'portfolio_repository_inspection');assert.equal(input.evidence[0].repository,'alice/project');assert.equal(input.evidence[0].commit_sha,'a'.repeat(40));assert.match(input.scoring_guidance,/Do not average repository scores/);assert.equal(input.evidence[0].content,'1| source\n2| next');assert.match(input.evidence[0].content_format,/annotations/);assert.equal(input.citation_repair.mode,'repair_unsupported_findings');
   }finally{client.close();}
 });

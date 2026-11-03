@@ -55,3 +55,14 @@ test('version 2 upgrade reuses all 104 compatible assessments and evaluates exac
   const jobs=createJobs({store,dataDir:'.local',collect:async()=>{throw new Error('Must preserve snapshot');},createClient:()=>({initialize:async()=>{},account:async()=>({authenticated:true}),close(){},evaluate:async({domains})=>{calls++;const ids=domains.flatMap(d=>d.criteria.map(c=>c.id));assert.ok(ids.length<=16);assessed.push(...ids);return unknowns(domains);}})});
   const next=jobs.upgrade('v2');await finished(jobs);const result=store.get(next.id);assert.deepEqual(store.get('v2'),previous);assert.equal(result.reusedAssessment.criterionIds.length,104);assert.equal(assessed.length,24);assert.equal(new Set(assessed).size,24);assert.ok(assessed.every(id=>id.startsWith('R4.')||Number(id.split('.')[1])>=13));assert.equal(calls,2);assert.equal(result.results.length,128);assert.equal(result.reports.length,4);assert.equal(result.scoringVersion,'3.0');
 });
+
+test('job resume retains the initial response and completed citation repairs against the same evidence',async()=>{
+  const store=memoryStore();let collections=0,initial=0,repairs=0,interrupt=true;
+  const proposal=evidence=>({criterion_id:'C1.1',status:'scored',score:2,confidence:'medium',rationale:'Fixture artifact',evidence,next_validation:'Validate behavior.'});
+  const jobs=createJobs({store,dataDir:'.local',collect:async()=>{collections++;return structuredClone(collected);},createClient:()=>({initialize:async()=>{},account:async()=>({authenticated:true}),close(){},evaluate:async({domains,citationRepair})=>{
+    if(citationRepair){repairs++;if(repairs===2&&interrupt)throw new Error('Repair transport interrupted');return {summary:'Repaired fixture',results:[proposal(repairs===1?[]:[{evidence_id:'E1',start_line:1,end_line:1,quote:'artifact'}])]};}
+    initial++;const output=unknowns(domains);if(domains.some(d=>d.criteria.some(c=>c.id==='C1.1')))output.results=output.results.map(row=>row.criterion_id==='C1.1'?proposal([]):row);return output;
+  }})});
+  const review=jobs.start({url:'https://github.com/a/b'});await finished(jobs);const interrupted=store.get(review.id);assert.equal(interrupted.status,'failed');assert.equal(interrupted.pendingCitationBatch.attempts['C1.1'],1);assert.equal(initial,1);
+  interrupt=false;jobs.retry(review.id);await finished(jobs);const completed=store.get(review.id);assert.equal(completed.status,'completed');assert.equal(initial,9);assert.equal(collections,1);assert.equal(completed.pendingCitationBatch,undefined);assert.equal(completed.citationRepair.summary.recovered,1);assert.equal(completed.citationRepair.summary.modelCalls,2);assert.equal(completed.validationWarnings.length,0);assert.equal(completed.citationRepair.beforeRepairReports[0].coverage,0);assert.ok(completed.reports[0].coverage>0);
+});

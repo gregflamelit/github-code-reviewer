@@ -77,7 +77,7 @@ export function validateResults(output, domains, evidence) {
   const expected = new Set(domains.flatMap(d=>d.criteria.map(c=>c.id)));
   const seen = new Set();
   const byId = new Map(evidence.map(e=>[e.id,e]));
-  const warnings = [];
+  const warnings = [],unsupported=[];
   const results = output.results.map(input => {
     const r = structuredClone(input);
     if (!expected.has(r.criterion_id)||seen.has(r.criterion_id)) throw new Error('Unexpected or duplicate criterion: '+r.criterion_id);
@@ -85,21 +85,23 @@ export function validateResults(output, domains, evidence) {
     if (!['scored','unknown','not_applicable'].includes(r.status) || !['low','medium','high'].includes(r.confidence) || typeof r.rationale!=='string'||!r.rationale.trim() || typeof r.next_validation!=='string'||!Array.isArray(r.evidence)) throw new Error('Invalid criterion fields: '+r.criterion_id);
     if (r.status==='scored' ? !Number.isInteger(r.score)||r.score<0||r.score>4 : r.score!==null) throw new Error('Invalid score state: '+r.criterion_id);
     if (r.criterion_id.startsWith('C') && r.status==='not_applicable') { r.status='unknown'; r.score=null; warnings.push(r.criterion_id+': core capability cannot be excluded.'); }
-    const verified=[];
+    const verified=[],issues=[];
     for (const ref of r.evidence) {
-      const e=byId.get(ref.evidence_id);
-      if (!e || !Number.isInteger(ref.start_line)||!Number.isInteger(ref.end_line)||ref.start_line<1||ref.end_line<ref.start_line||ref.end_line>e.content.split('\n').length||typeof ref.quote!=='string'||!ref.quote.trim()) continue;
+      const e=byId.get(ref?.evidence_id);
+      if(!e){issues.push({ref,reason:'Unknown evidence ID; choose an ID from the supplied frozen evidence.'});continue;}
+      if (!Number.isInteger(ref.start_line)||!Number.isInteger(ref.end_line)||ref.start_line<1||ref.end_line<ref.start_line||ref.end_line>e.content.split('\n').length||typeof ref.quote!=='string'||!ref.quote.trim()){issues.push({ref,reason:'Invalid line range or empty quote; use original 1-based source lines.'});continue;}
       const excerpt=e.content.split('\n').slice(ref.start_line-1,ref.end_line).join('\n');
-      if (!excerpt.includes(ref.quote)) continue;
+      if (!excerpt.includes(ref.quote)){issues.push({ref,reason:'Quote does not occur exactly and contiguously in the claimed line range.'});continue;}
       verified.push({...ref,url:e.type==='file' ? e.url+'#L'+ref.start_line+'-L'+ref.end_line:e.url,path:e.path,type:e.type,category:e.category,temporal_scope:e.temporal_scope,collectedAt:e.collectedAt,...(e.repository?{repository:e.repository,commit_sha:e.commit_sha}:{})});
     }
     if ((r.status==='scored'||r.status==='not_applicable')&&!verified.length) {
+      unsupported.push({criterion_id:r.criterion_id,proposed:structuredClone(input),issues:issues.length?issues:[{reason:'A scored or excluded assessment requires an exact supporting source citation.'}]});
       warnings.push(r.criterion_id+': unsupported assessment converted to unknown.');
       r.status='unknown'; r.score=null; r.next_validation='Collect direct supporting evidence. '+r.next_validation;
     }
     r.evidence=verified;
     return r;
   });
-  for (const id of expected) if (!seen.has(id)) { warnings.push(id+': missing assessment converted to unknown.'); results.push({criterion_id:id,status:'unknown',score:null,confidence:'low',rationale:'Codex did not assess this criterion.',evidence:[],next_validation:'Collect evidence and assess this criterion.'}); }
-  return {summary:output.summary, results,warnings};
+  for (const id of expected) if (!seen.has(id)) { warnings.push(id+': missing assessment converted to unknown.');unsupported.push({criterion_id:id,proposed:null,issues:[{reason:'Requested criterion was missing from the response.'}]}); results.push({criterion_id:id,status:'unknown',score:null,confidence:'low',rationale:'Codex did not assess this criterion.',evidence:[],next_validation:'Collect evidence and assess this criterion.'}); }
+  return {summary:output.summary, results,warnings,unsupported};
 }

@@ -5,7 +5,8 @@ import { CodexClient } from './codex.mjs';
 import { parseGitHubTarget } from './github.mjs';
 import { collectTarget } from './portfolio.mjs';
 import { buildInsights } from './insights.mjs';
-import { rubric,profiles,currentCatalog,getReviewCatalog,validateResults,aggregateAll } from './rubric.mjs';
+import {repairAssessments,citationRepairPolicy,citationRepairTotals} from './citation-repair.mjs';
+import { rubric,profiles,currentCatalog,getReviewCatalog,aggregateAll } from './rubric.mjs';
 
 export function createJobs({store,dataDir,createClient=options=>new CodexClient(options),collect=collectTarget,retryDelay=3000}) {
   const controllers=new Map();let active=null;
@@ -29,25 +30,30 @@ export function createJobs({store,dataDir,createClient=options=>new CodexClient(
       for(const domain of domains){if(next.length&&(next.length>=4||count+domain.criteria.length>16)){batches.push(next);next=[];count=0;}next.push(domain);count+=domain.criteria.length;}
       if(next.length)batches.push(next);
       review.status='evaluating';review.results??=[];review.summaries??=[];review.validationWarnings??=[];
+      review.citationRepair??={policy:citationRepairPolicy,batches:[]};
+      const assessmentContext=review.portfolio?{type:'portfolio',owner:review.portfolio.owner,method:review.portfolio.consolidationMethod,repositories:review.portfolio.included.map(r=>({name:r.fullName,sha:r.sha,incorporatedFiles:r.incorporatedFiles})),failedRepositories:review.portfolio.failed.map(r=>r.fullName),listingTruncated:review.portfolio.listingTruncated}:{type:'repository'};
+      const evaluate=async({domains,citationRepair})=>{
+        for(let attempt=1;attempt<=3;attempt++){
+          try{return await client.evaluate({domains,evidence:review.evidence,rubricVersion:catalog.rubric.rubric_version,assessmentContext,citationRepair,model:review.model,signal:controller.signal,onProgress:m=>update(review,m)});}
+          catch(error){if(controller.signal.aborted||attempt===3||!/at capacity|rate.limit|429|temporarily unavailable|overloaded/i.test(error.message))throw error;update(review,'Codex temporarily unavailable; retrying request (attempt '+(attempt+1)+' of 3)');await delay(retryDelay*attempt,undefined,{signal:controller.signal});}
+        }
+      };
       for(const [i,batch] of batches.entries()){
         if(controller.signal.aborted)throw controller.signal.reason;
         if(batch.every(d=>d.criteria.every(c=>review.results.some(r=>r.criterion_id===c.id))))continue;
         update(review,'Evaluation batch '+(i+1)+' of '+batches.length);
-        let output;
-        for(let attempt=1;attempt<=3;attempt++){
-          try{output=await client.evaluate({domains:batch,evidence:review.evidence,rubricVersion:catalog.rubric.rubric_version,assessmentContext:review.portfolio?{type:'portfolio',owner:review.portfolio.owner,method:review.portfolio.consolidationMethod,repositories:review.portfolio.included.map(r=>({name:r.fullName,sha:r.sha,incorporatedFiles:r.incorporatedFiles})),failedRepositories:review.portfolio.failed.map(r=>r.fullName),listingTruncated:review.portfolio.listingTruncated}: {type:'repository'},model:review.model,signal:controller.signal,onProgress:m=>update(review,m)});break;}
-          catch(error){
-            if(controller.signal.aborted||attempt===3||!/at capacity|rate.limit|429|temporarily unavailable|overloaded/i.test(error.message))throw error;
-            update(review,'Codex temporarily unavailable; retrying batch (attempt '+(attempt+1)+' of 3)');
-            await delay(retryDelay*attempt,undefined,{signal:controller.signal});
-          }
-        }
-        const validated=validateResults(output,batch,review.evidence);
+        const criterionIds=batch.flatMap(d=>d.criteria.map(c=>c.id));
+        let state=review.pendingCitationBatch;
+        if(state&&JSON.stringify([...state.criterionIds].sort())!==JSON.stringify([...criterionIds].sort()))throw new Error('Pending citation repair does not match the saved evaluation batch.');
+        if(!state){state={criterionIds,output:await evaluate({domains:batch})};review.pendingCitationBatch=state;store.save(review);}
+        const validated=await repairAssessments({state,domains:batch,evidence:review.evidence,evaluate,signal:controller.signal,onProgress:m=>update(review,m),checkpoint:pending=>{review.pendingCitationBatch=pending;store.save(review);}});
         const ids=new Set(batch.flatMap(d=>d.criteria.map(c=>c.id)));
         review.results=review.results.filter(r=>!ids.has(r.criterion_id)).concat(validated.results);
-        review.summaries.push(validated.summary);review.validationWarnings.push(...validated.warnings);store.save(review);
+        review.summaries.push(validated.summary);review.validationWarnings.push(...validated.warnings);review.citationRepair.batches.push(validated.repair);review.citationRepair.summary=citationRepairTotals(review.citationRepair.batches);delete review.pendingCitationBatch;store.save(review);
       }
       review.reports=aggregateAll(review.results,catalog);
+      const beforeById=new Map(review.citationRepair.batches.flatMap(batch=>batch.beforeRepairResults||[]).map(row=>[row.criterion_id,row]));
+      review.citationRepair.beforeRepairReports=aggregateAll(review.results.map(row=>beforeById.get(row.criterion_id)||row),catalog).map(({rubricId,rubricName,score,coverage})=>({rubricId,rubricName,score,coverage}));
       if(review.portfolio&&!review.portfolio.collectionComplete)for(const report of review.reports){report.eligible=false;report.band='Provisional — repository collection incomplete';report.blockers.push({id:'portfolio_scope',reason:'One or more selected repositories lack collected source evidence'});}
       review.insights=buildInsights(review.reports,catalog,review.validationWarnings);
       for(const report of review.reports)report.insights=buildInsights([report],catalog,review.validationWarnings);
@@ -60,7 +66,7 @@ export function createJobs({store,dataDir,createClient=options=>new CodexClient(
       if(active)throw Object.assign(new Error('A review is already running. Wait or cancel it first.'),{status:409});
       if(!Object.hasOwn(profiles,profile))throw Object.assign(new Error('Unknown assessment profile.'),{status:400});
       const parsed=parseGitHubTarget(url);const now=new Date().toISOString();
-      const review=store.save({id:randomUUID(),url:parsed.url,target:parsed,profile:'comprehensive',status:'queued',createdAt:now,updatedAt:now,message:'Queued',appVersion:'0.5.0',rubricVersion:rubric.rubric_version,scoringVersion:currentCatalog.scoringConfig.rubric_version,catalog:structuredClone(currentCatalog),assessmentMode:parsed.kind==='portfolio'?'portfolio_repository_inspection':'repository_inspection',subjectType:parsed.kind});
+      const review=store.save({id:randomUUID(),url:parsed.url,target:parsed,profile:'comprehensive',status:'queued',createdAt:now,updatedAt:now,message:'Queued',appVersion:'0.5.1',rubricVersion:rubric.rubric_version,scoringVersion:currentCatalog.scoringConfig.rubric_version,catalog:structuredClone(currentCatalog),assessmentMode:parsed.kind==='portfolio'?'portfolio_repository_inspection':'repository_inspection',subjectType:parsed.kind});
       void run(review);return review;
     },
     retry(id){
@@ -79,7 +85,7 @@ export function createJobs({store,dataDir,createClient=options=>new CodexClient(
       const semantics=criterion=>{if(!criterion)return null;const {domain_weight_percent,...definition}=criterion;return JSON.stringify(definition);};
       const compatible=new Set(rubric.domains.flatMap(d=>d.criteria).filter(c=>semantics(c)===semantics(oldCriteria.get(c.id))).map(c=>c.id));
       const now=new Date().toISOString();
-      const r=store.save({id:randomUUID(),url:previous.url,target:previous.target,profile:'comprehensive',status:'queued',createdAt:now,updatedAt:now,message:'Queued for latest rubric',appVersion:'0.5.0',rubricVersion:rubric.rubric_version,scoringVersion:currentCatalog.scoringConfig.rubric_version,catalog:structuredClone(currentCatalog),assessmentMode:previous.assessmentMode||'repository_inspection',subjectType:previous.subjectType||'repository',upgradedFrom:id,model:previous.model,repository:structuredClone(previous.repository),portfolio:structuredClone(previous.portfolio),evidence:structuredClone(previous.evidence),warnings:structuredClone(previous.warnings||[]),results:structuredClone((previous.results||[]).filter(row=>compatible.has(row.criterion_id))),summaries:structuredClone(previous.summaries||[]),reusedAssessment:{reviewId:id,criteriaVersion:oldCatalog.rubric.rubric_version,criterionIds:(previous.results||[]).filter(row=>compatible.has(row.criterion_id)).map(row=>row.criterion_id)}});
+      const r=store.save({id:randomUUID(),url:previous.url,target:previous.target,profile:'comprehensive',status:'queued',createdAt:now,updatedAt:now,message:'Queued for latest rubric',appVersion:'0.5.1',rubricVersion:rubric.rubric_version,scoringVersion:currentCatalog.scoringConfig.rubric_version,catalog:structuredClone(currentCatalog),assessmentMode:previous.assessmentMode||'repository_inspection',subjectType:previous.subjectType||'repository',upgradedFrom:id,model:previous.model,repository:structuredClone(previous.repository),portfolio:structuredClone(previous.portfolio),evidence:structuredClone(previous.evidence),warnings:structuredClone(previous.warnings||[]),results:structuredClone((previous.results||[]).filter(row=>compatible.has(row.criterion_id))),summaries:structuredClone(previous.summaries||[]),reusedAssessment:{reviewId:id,criteriaVersion:oldCatalog.rubric.rubric_version,criterionIds:(previous.results||[]).filter(row=>compatible.has(row.criterion_id)).map(row=>row.criterion_id)}});
       void run(r);return r;
     },
     cancel(id){const c=controllers.get(id);if(!c)throw Object.assign(new Error('No running review with this ID.'),{status:409});c.abort(new Error('Cancelled by user.'));},

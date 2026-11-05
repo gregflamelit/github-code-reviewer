@@ -8,6 +8,9 @@
   },
   "scripts": {
     "start": "node server.mjs",
+    "challenge": "node challenge/server.mjs",
+    "challenge:worker": "node challenge/worker.mjs",
+    "test:challenge": "node --test test/challenge*.test.mjs",
     "test": "node --test",
     "check": "node --check server.mjs"
   },

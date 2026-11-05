@@ -37,12 +37,14 @@ export async function rawFile(repository,commit,file,{signal,fetcher=fetch}={}){
   return bytes.toString('utf8');
 }
 
-export async function collectRepository(url,{signal,onProgress=()=>{},request=github}={}) {
+export async function collectRepository(url,{signal,onProgress=()=>{},request=github,commitSha,allowPrivate=false,includeHistory=true}={}) {
   const parsed=parseRepository(url); const base='/repos/'+parsed.fullName; const options={signal};
   onProgress('Resolving public repository and immutable revision');
   const repo=await request(base,options);
-  if(repo.private)throw new Error('Version 1 supports public repositories only.');
-  const commit=await request(base+'/commits/'+encodeURIComponent(repo.default_branch),options);
+  if(repo.private&&!allowPrivate)throw new Error('Version 1 supports public repositories only.');
+  if(commitSha&&!/^[a-f0-9]{40}$/i.test(commitSha))throw new Error('Invalid frozen commit SHA.');
+  const commit=await request(base+'/commits/'+encodeURIComponent(commitSha||repo.default_branch),options);
+  if(commitSha&&commit.sha.toLowerCase()!==commitSha.toLowerCase())throw new Error('Frozen commit does not match GitHub response.');
   if(!/^[a-f0-9]{40}$/i.test(commit.sha))throw new Error('GitHub returned an invalid commit.');
   const tree=await request(base+'/git/trees/'+commit.sha+'?recursive=1',options);
   if(!Array.isArray(tree.tree))throw new Error('Repository tree unavailable.');
@@ -80,7 +82,7 @@ export async function collectRepository(url,{signal,onProgress=()=>{},request=gi
   // Preserve category representation first, then reuse spare budget without refetching.
   for(const f of selected)await collectFile(f,limits.fileBudget-budget);
   const historyStart=budget;
-  const history=await collectHistory(base,{request,signal,collectedAt,warnings,onProgress,add:item=>add(item,historyStart+limits.historyBudget)});
+  const history=includeHistory?await collectHistory(base,{request,signal,collectedAt,warnings,onProgress,add:item=>add(item,historyStart+limits.historyBudget)}):{excluded:true,reason:'Timed submission: mutable discussions and pull requests are excluded.'};
   add({type:'metadata',path:'Repository metadata',url:parsed.url,content:JSON.stringify({full_name:repo.full_name,description:repo.description,default_branch:repo.default_branch,commit_sha:commit.sha,commit_date:commit.commit?.committer?.date,tree_truncated:Boolean(tree.truncated),total_files:inventory.length},null,2)});
   const paths=inventory.slice(0,2500).map(f=>f.path).join('\n');
   add({type:'inventory',path:'File inventory',url:parsed.url+'/tree/'+commit.sha,content:paths.slice(0,9000),truncated:paths.length>9000||inventory.length>2500});

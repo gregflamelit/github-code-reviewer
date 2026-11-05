@@ -1,5 +1,9 @@
 # GitHub Code Reviewer
 
+## Wine challenge hiring service
+
+The separate candidate portal and employer dashboard run with `pnpm challenge` at **http://127.0.0.1:4320/employer**. Demo mode works without GitHub credentials: create an invitation, start the challenge, simulate pushes, and review a frozen submission. Real GitHub authorization, signed push webhooks, and the independent evaluation/PDF worker are available in live mode. See [setup and operating instructions](docs/challenge-service.md). The existing evaluator below remains independent on port 4317.
+
 A local application that evaluates a public GitHub profile or repository with your signed-in Codex CLI and 128 criteria (68 shared plus 60 specialist). One consolidated assessment produces four independently weighted reports: **AI Product Manager**, **AI Engineering Rubric**, **AI Data Science Rubric**, and **Human Centered Design**. Reports include scores, evidence coverage, exact quoted citations, ranked improvements, missing evidence, and follow-up validation tasks.
 
 ## Run locally
